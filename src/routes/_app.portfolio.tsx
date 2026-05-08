@@ -238,6 +238,23 @@ function HappinessChip({ value }: { value: number }) {
   );
 }
 
+function PriceChangeChip({ pct }: { pct: number }) {
+  const flat = Math.abs(pct) < 0.05;
+  const up = pct > 0 && !flat;
+  const cls = flat
+    ? "bg-muted/40 text-muted-foreground border-border"
+    : up
+    ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/40"
+    : "bg-red-500/20 text-red-300 border-red-400/40";
+  const Icon = flat ? TrendingUp : up ? TrendingUp : TrendingDown;
+  return (
+    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[10px] font-bold tabular-nums ${cls}`}>
+      <Icon className="w-3 h-3" />
+      {(pct >= 0 ? "+" : "") + pct.toFixed(2)}%
+    </span>
+  );
+}
+
 function PropertyActions({
   property,
   tenant,
