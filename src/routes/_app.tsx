@@ -4,9 +4,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { NewsTicker } from "@/components/NewsTicker";
-import { useProfile } from "@/lib/data-hooks";
-import { processDailyTicks } from "@/lib/game";
+import { useLuckEvents, useProfile } from "@/lib/data-hooks";
+import { processDailyTicks, type LuckEvent } from "@/lib/game";
 import { DailyTickModal } from "@/components/DailyTickModal";
+import { LuckEventModal } from "@/components/LuckEventModal";
+import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
@@ -19,6 +21,7 @@ function AppShell() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const { data: profile } = useProfile(user?.id);
+  const { data: luckEvents } = useLuckEvents(user?.id);
   const [tickSummary, setTickSummary] = useState<{ rent: number; maintenance: number; net: number } | null>(null);
 
   useEffect(() => {
@@ -40,12 +43,22 @@ function AppShell() {
       qc.invalidateQueries({ queryKey: ["profile", user.id] });
       qc.invalidateQueries({ queryKey: ["player_properties", user.id] });
       qc.invalidateQueries({ queryKey: ["ledger", user.id] });
+      qc.invalidateQueries({ queryKey: ["loans", user.id] });
+      qc.invalidateQueries({ queryKey: ["luck_events", user.id] });
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, profile?.id]);
+
+  const pendingLuck: LuckEvent | undefined = (luckEvents ?? []).find((e) => !e.acknowledged);
+
+  async function ackLuck() {
+    if (!pendingLuck || !user) return;
+    await supabase.from("luck_events").update({ acknowledged: true }).eq("id", pendingLuck.id);
+    qc.invalidateQueries({ queryKey: ["luck_events", user.id] });
+  }
 
   if (loading || !user) {
     return (
@@ -70,6 +83,9 @@ function AppShell() {
           net={tickSummary.net}
           onClose={() => setTickSummary(null)}
         />
+      )}
+      {!tickSummary && pendingLuck && (
+        <LuckEventModal event={pendingLuck} onClose={ackLuck} />
       )}
     </div>
   );
