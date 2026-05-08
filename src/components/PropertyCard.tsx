@@ -5,6 +5,7 @@ import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, P
 import { useEffect, useMemo, useState } from "react";
 import { Overlay } from "@/components/Overlay";
 import { Z } from "@/lib/z";
+import { PropertyImage } from "@/components/PropertyImage";
 
 export type BuyOptions = { useBond: boolean; ltv: number; deposit: number; monthlyPayment: number };
 
@@ -49,7 +50,7 @@ export function PropertyCard({
     <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 animate-fade-in" style={{ zIndex: Z.modal }} onClick={onClose}>
       <div className="w-full sm:max-w-md bg-card border border-border sm:rounded-2xl rounded-t-2xl shadow-card overflow-hidden max-h-[92vh] overflow-y-auto animate-scale-in" onClick={(e) => e.stopPropagation()}>
         <div className="relative aspect-[16/10] bg-muted">
-          {property.photo_url && <img src={property.photo_url} alt={property.address} className="w-full h-full object-cover" />}
+          <PropertyImage propertyId={property.id} listingPrice={property.listing_price} alt={property.address} loading="eager" />
           <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-background/80 backdrop-blur grid place-items-center hover:bg-background" aria-label="Close">
             <X className="w-4 h-4" />
           </button>
