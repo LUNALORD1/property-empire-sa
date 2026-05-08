@@ -6,6 +6,7 @@ import { Bed, Bath, MapPin, TrendingUp } from "lucide-react";
 import { computeMonthlyRent, bedroomsToAdminPoints, totalAdminCap, tierForPrice, TIERS, type Property } from "@/lib/game";
 import { formatZAR } from "@/lib/format";
 import { PropertyCard, type BuyOptions } from "@/components/PropertyCard";
+import { PropertyImage } from "@/components/PropertyImage";
 import { buyProperty } from "@/lib/buy";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
