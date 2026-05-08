@@ -16,6 +16,7 @@ import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppPortfolioRouteImport } from './routes/_app.portfolio'
 import { Route as AppMarketRouteImport } from './routes/_app.market'
 import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
+import { Route as AppGameoverRouteImport } from './routes/_app.gameover'
 import { Route as AppFinancesRouteImport } from './routes/_app.finances'
 import { Route as ApiPublicHooksWeatherUpdateRouteImport } from './routes/api/public/hooks/weather-update'
 import { Route as ApiPublicHooksLeaderboardRefreshRouteImport } from './routes/api/public/hooks/leaderboard-refresh'
@@ -54,6 +55,11 @@ const AppLeaderboardRoute = AppLeaderboardRouteImport.update({
   path: '/leaderboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppGameoverRoute = AppGameoverRouteImport.update({
+  id: '/gameover',
+  path: '/gameover',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFinancesRoute = AppFinancesRouteImport.update({
   id: '/finances',
   path: '/finances',
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/finances': typeof AppFinancesRoute
+  '/gameover': typeof AppGameoverRoute
   '/leaderboard': typeof AppLeaderboardRoute
   '/market': typeof AppMarketRoute
   '/portfolio': typeof AppPortfolioRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/finances': typeof AppFinancesRoute
+  '/gameover': typeof AppGameoverRoute
   '/leaderboard': typeof AppLeaderboardRoute
   '/market': typeof AppMarketRoute
   '/portfolio': typeof AppPortfolioRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/finances': typeof AppFinancesRoute
+  '/_app/gameover': typeof AppGameoverRoute
   '/_app/leaderboard': typeof AppLeaderboardRoute
   '/_app/market': typeof AppMarketRoute
   '/_app/portfolio': typeof AppPortfolioRoute
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/finances'
+    | '/gameover'
     | '/leaderboard'
     | '/market'
     | '/portfolio'
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/finances'
+    | '/gameover'
     | '/leaderboard'
     | '/market'
     | '/portfolio'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/finances'
+    | '/_app/gameover'
     | '/_app/leaderboard'
     | '/_app/market'
     | '/_app/portfolio'
@@ -202,6 +214,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLeaderboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/gameover': {
+      id: '/_app/gameover'
+      path: '/gameover'
+      fullPath: '/gameover'
+      preLoaderRoute: typeof AppGameoverRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/finances': {
       id: '/_app/finances'
       path: '/finances'
@@ -228,6 +247,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppFinancesRoute: typeof AppFinancesRoute
+  AppGameoverRoute: typeof AppGameoverRoute
   AppLeaderboardRoute: typeof AppLeaderboardRoute
   AppMarketRoute: typeof AppMarketRoute
   AppPortfolioRoute: typeof AppPortfolioRoute
@@ -237,6 +257,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppFinancesRoute: AppFinancesRoute,
+  AppGameoverRoute: AppGameoverRoute,
   AppLeaderboardRoute: AppLeaderboardRoute,
   AppMarketRoute: AppMarketRoute,
   AppPortfolioRoute: AppPortfolioRoute,
@@ -255,3 +276,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
