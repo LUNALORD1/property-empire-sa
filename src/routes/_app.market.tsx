@@ -1,0 +1,149 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { useCities, useMarketProperties, usePlayerProperties, useProfile } from "@/lib/data-hooks";
+import { useAuth } from "@/hooks/use-auth";
+import { Bed, Bath, MapPin, TrendingUp } from "lucide-react";
+import { computeMonthlyRent, computeMonthlyMaintenance, type Property } from "@/lib/game";
+import { formatZAR } from "@/lib/format";
+import { PropertyCard } from "@/components/PropertyCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/_app/market")({
+  head: () => ({
+    meta: [
+      { title: "Market — Property Empire SA" },
+      { name: "description", content: "Browse all available SA listings, filter by city and price." },
+    ],
+  }),
+  component: MarketPage,
+});
+
+function MarketPage() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const { data: cities } = useCities();
+  const { data: properties } = useMarketProperties();
+  const { data: profile } = useProfile(user?.id);
+  const { data: owned } = usePlayerProperties(user?.id);
+  const [city, setCity] = useState<string>("all");
+  const [tier, setTier] = useState<string>("all");
+  const [selected, setSelected] = useState<Property | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const cityById = useMemo(() => Object.fromEntries((cities ?? []).map((c) => [c.id, c])), [cities]);
+  const ownedMap = useMemo(() => {
+    const m: Record<string, "rented" | "vacant"> = {};
+    (owned ?? []).forEach((o) => { m[o.property_id] = o.status === "rented" ? "rented" : "vacant"; });
+    return m;
+  }, [owned]);
+
+  const tiers = [
+    { id: "all", label: "Any price", min: 0, max: Infinity },
+    { id: "under1m", label: "Under R1M", min: 0, max: 1_000_000 },
+    { id: "1to3", label: "R1M – R3M", min: 1_000_000, max: 3_000_000 },
+    { id: "3to6", label: "R3M – R6M", min: 3_000_000, max: 6_000_000 },
+    { id: "luxury", label: "R6M+", min: 6_000_000, max: Infinity },
+  ];
+
+  const filtered = useMemo(() => {
+    const t = tiers.find((x) => x.id === tier)!;
+    return (properties ?? []).filter((p) => {
+      if (city !== "all" && p.city_id !== city) return false;
+      if (p.listing_price < t.min || p.listing_price > t.max) return false;
+      return true;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [properties, city, tier]);
+
+  async function handleBuy() {
+    if (!user || !selected) return;
+    setBusy(true);
+    try {
+      const monthlyRent = computeMonthlyRent(selected);
+      const monthlyMaint = computeMonthlyMaintenance(selected.listing_price);
+      const { error: ppErr } = await supabase.from("player_properties").insert({
+        player_id: user.id, property_id: selected.id, purchase_price: selected.listing_price,
+        current_value: selected.listing_price, monthly_rent: monthlyRent,
+        monthly_maintenance: monthlyMaint, status: "rented",
+      });
+      if (ppErr) throw ppErr;
+      await supabase.from("properties").update({ status: "sold" }).eq("id", selected.id);
+      const newCash = Number(profile?.cash ?? 0) - selected.listing_price;
+      await supabase.from("profiles").update({ cash: newCash }).eq("id", user.id);
+      await supabase.from("ledger").insert({ player_id: user.id, type: "purchase", amount: -selected.listing_price, property_id: selected.id, description: `Bought ${selected.address}` });
+      toast.success(`Bought ${selected.suburb}`);
+      setSelected(null);
+      qc.invalidateQueries({ queryKey: ["profile", user.id] });
+      qc.invalidateQueries({ queryKey: ["player_properties", user.id] });
+      qc.invalidateQueries({ queryKey: ["properties"] });
+      qc.invalidateQueries({ queryKey: ["ledger", user.id] });
+    } catch (e: any) { toast.error(e.message ?? "Purchase failed"); } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <div className="p-4 max-w-3xl mx-auto w-full">
+        <h1 className="text-2xl font-bold mb-3">Market</h1>
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+          <Chip active={city === "all"} onClick={() => setCity("all")}>All cities</Chip>
+          {(cities ?? []).map((c) => (
+            <Chip key={c.id} active={city === c.id} onClick={() => setCity(c.id)}>{c.name}</Chip>
+          ))}
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-2 mt-1 -mx-1 px-1">
+          {tiers.map((t) => (
+            <Chip key={t.id} active={tier === t.id} onClick={() => setTier(t.id)}>{t.label}</Chip>
+          ))}
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3 mt-2">
+          {filtered.map((p) => {
+            const rent = computeMonthlyRent(p);
+            const yieldPct = (rent * 12) / p.listing_price * 100;
+            const isOwned = !!ownedMap[p.id];
+            return (
+              <button key={p.id} onClick={() => setSelected(p)} className="text-left rounded-2xl bg-gradient-card border border-border overflow-hidden shadow-card hover:border-primary/40 transition-colors">
+                <div className="aspect-[16/10] bg-muted relative">
+                  {p.photo_url && <img src={p.photo_url} alt={p.address} loading="lazy" className="w-full h-full object-cover" />}
+                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-background/85 text-[10px] font-medium">{cityById[p.city_id]?.name} · {p.suburb}</div>
+                  {isOwned && <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-success/90 text-[10px] font-bold uppercase">Owned</div>}
+                </div>
+                <div className="p-3 space-y-1.5">
+                  <div className="flex items-baseline justify-between">
+                    <div className="text-lg font-bold text-gradient-gold tabular-nums">{formatZAR(p.listing_price, { compact: true })}</div>
+                    <div className="text-xs text-success flex items-center gap-1"><TrendingUp className="w-3 h-3" />{yieldPct.toFixed(1)}%</div>
+                  </div>
+                  <div className="text-xs text-muted-foreground flex items-start gap-1 truncate">
+                    <MapPin className="w-3 h-3 mt-0.5 shrink-0" /><span className="truncate">{p.address}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1 border-t border-border">
+                    <span className="flex items-center gap-1"><Bed className="w-3 h-3" />{p.bedrooms}</span>
+                    <span className="flex items-center gap-1"><Bath className="w-3 h-3" />{p.bathrooms}</span>
+                    <span className="ml-auto">{formatZAR(rent)}/mo</span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {!filtered.length && <div className="text-sm text-muted-foreground py-10 text-center">No listings match your filters.</div>}
+      </div>
+      {selected && (
+        <PropertyCard property={selected} cityName={cityById[selected.city_id]?.name}
+          cash={Number(profile?.cash ?? 0)} owned={!!ownedMap[selected.id]}
+          busy={busy} onClose={() => setSelected(null)} onBuy={handleBuy} />
+      )}
+    </div>
+  );
+}
+
+function Chip({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button onClick={onClick}
+      className={"shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors " +
+        (active ? "bg-gradient-gold text-primary-foreground border-transparent shadow-gold" : "bg-card border-border text-muted-foreground hover:text-foreground")}>
+      {children}
+    </button>
+  );
+}
