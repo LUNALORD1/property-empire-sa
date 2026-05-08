@@ -1,7 +1,7 @@
 import { Bed, Bath, MapPin, X, TrendingUp, Wrench, Banknote, Wallet, CloudRain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
-import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, PRIME_RATE, type Property } from "@/lib/game";
+import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, PRIME_RATE, tierForPrice, type Property } from "@/lib/game";
 import { useEffect, useMemo, useState } from "react";
 import { Overlay } from "@/components/Overlay";
 import { Z } from "@/lib/z";
@@ -22,6 +22,7 @@ export function PropertyCard({
   const rent = computeMonthlyRent(property);
   const maint = computeMonthlyMaintenance(property.listing_price, weatherMultiplier ?? 1);
   const yieldPct = (rent * 12) / property.listing_price * 100;
+  const tier = tierForPrice(property.listing_price);
 
   const [useBond, setUseBond] = useState(false);
   const [ltv, setLtv] = useState(85);
@@ -54,6 +55,9 @@ export function PropertyCard({
           </button>
           <div className="absolute bottom-3 left-3 px-2 py-1 rounded-md bg-background/85 backdrop-blur text-xs font-medium">
             {cityName} · {property.suburb}
+          </div>
+          <div className={"absolute top-3 left-3 px-2 py-1 rounded-md border text-[10px] font-bold uppercase backdrop-blur " + tier.color}>
+            {tier.label}
           </div>
           {weatherLabel && (weatherMultiplier ?? 1) > 1 && (
             <div className="absolute bottom-3 right-3 px-2 py-1 rounded-md bg-background/85 backdrop-blur text-[10px] font-semibold flex items-center gap-1 text-primary">
