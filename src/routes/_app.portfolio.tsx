@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePlayerProperties } from "@/lib/data-hooks";
 import { formatZAR } from "@/lib/format";
 import { Bed, Bath, Building2, TrendingUp, ArrowRight } from "lucide-react";
+import { QuickActions } from "@/components/QuickActions";
 
 export const Route = createFileRoute("/_app/portfolio")({
   head: () => ({
@@ -40,6 +41,9 @@ function PortfolioPage() {
   return (
     <div className="p-4 max-w-3xl mx-auto w-full overflow-y-auto pb-8">
       <h1 className="text-2xl font-bold mb-4">Portfolio <span className="text-muted-foreground text-base font-normal">({properties.length})</span></h1>
+      <div className="mb-4">
+        <QuickActions />
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {properties.map((p) => {
           const cashflow = Number(p.monthly_rent) - Number(p.monthly_maintenance);
