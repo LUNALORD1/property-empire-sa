@@ -28,6 +28,9 @@ export function SellPropertyDialog({
   const commission = Math.round(value * 0.05);
   const net = value - commission - bond;
   const isRented = property.status === "rented";
+  const purchase = Number(property.purchase_price);
+  const profitGross = value - purchase;
+  const profitNet = net - purchase;
 
   useEffect(() => {
     let cancelled = false;
@@ -95,6 +98,24 @@ export function SellPropertyDialog({
           </header>
 
           <div className="p-4 space-y-3">
+            <div className="rounded-xl border border-border bg-muted/20 p-3 text-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Bought for</span>
+                <span className="font-semibold tabular-nums">{formatZAR(purchase)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Current value</span>
+                <span className="font-semibold tabular-nums">{formatZAR(value)}</span>
+              </div>
+              <div className="flex items-center justify-between border-t border-border pt-1 mt-1">
+                <span className={profitGross >= 0 ? "text-success font-semibold" : "text-destructive font-semibold"}>
+                  {profitGross >= 0 ? "Profit before commission" : "Loss before commission"}
+                </span>
+                <span className={"font-bold tabular-nums " + (profitGross >= 0 ? "text-success" : "text-destructive")}>
+                  {(profitGross >= 0 ? "+" : "−")}{formatZAR(Math.abs(profitGross))}
+                </span>
+              </div>
+            </div>
             <Row label="Sale price (current value)" value={formatZAR(value)} />
             <Row label="Agent commission (5%)" value={"− " + formatZAR(commission)} negative icon={<TrendingDown className="w-3.5 h-3.5" />} />
             <Row label="Bond settlement" value={"− " + formatZAR(bond)} negative icon={<Banknote className="w-3.5 h-3.5" />} loading={loadingBond} />
@@ -104,6 +125,14 @@ export function SellPropertyDialog({
                 {underwater ? "−" : ""}{formatZAR(Math.abs(net))}
               </div>
             </div>
+            {!loadingBond && !underwater && (
+              <div className="text-xs text-muted-foreground text-right tabular-nums">
+                Net vs purchase:{" "}
+                <span className={profitNet >= 0 ? "text-success font-semibold" : "text-destructive font-semibold"}>
+                  {(profitNet >= 0 ? "+" : "−")}{formatZAR(Math.abs(profitNet))}
+                </span>
+              </div>
+            )}
 
             {underwater && (
               <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive flex gap-2">
