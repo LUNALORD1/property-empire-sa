@@ -7,8 +7,13 @@ export async function buyProperty(opts: {
   cash: number;
   useBond: boolean;
   ltv: number;
+  adminUsed: number;
+  adminCap: number;
 }) {
-  const { userId, property, cash, useBond, ltv } = opts;
+  const { userId, property, cash, useBond, ltv, adminUsed, adminCap } = opts;
+  if (adminUsed + property.bedrooms > adminCap) {
+    throw new Error("Not enough admin points — hire an assistant first");
+  }
   const price = Number(property.listing_price);
   const principal = useBond ? Math.round(price * (ltv / 100)) : 0;
   const deposit = price - principal;
