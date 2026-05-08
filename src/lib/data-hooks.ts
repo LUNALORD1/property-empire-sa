@@ -107,3 +107,42 @@ export function useLuckEvents(userId: string | undefined) {
     refetchInterval: 30_000,
   });
 }
+
+export function useAchievements(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["achievements", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("achievements")
+        .select("*")
+        .eq("player_id", userId!)
+        .order("unlocked_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useLeaderboard() {
+  return useQuery({
+    queryKey: ["leaderboard"],
+    queryFn: async () => {
+      const { data: latest } = await supabase
+        .from("leaderboard_snapshots")
+        .select("snapshot_date")
+        .order("snapshot_date", { ascending: false })
+        .limit(1);
+      const date = latest?.[0]?.snapshot_date;
+      if (!date) return { date: null as string | null, rows: [] as any[] };
+      const { data, error } = await supabase
+        .from("leaderboard_snapshots")
+        .select("*")
+        .eq("snapshot_date", date)
+        .order("rank", { ascending: true });
+      if (error) throw error;
+      return { date, rows: data ?? [] };
+    },
+    staleTime: 1000 * 60 * 10,
+  });
+}
