@@ -60,6 +60,8 @@ function MapPage() {
         cash: Number(profile?.cash ?? 0),
         useBond: opts.useBond,
         ltv: opts.ltv,
+        adminUsed,
+        adminCap,
       });
       toast.success(`You now own ${selected.suburb}!`);
       setSelected(null);
