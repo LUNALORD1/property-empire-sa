@@ -53,7 +53,7 @@ export function PropertyCard({
             {cityName} · {property.suburb}
           </div>
           {weatherLabel && (weatherMultiplier ?? 1) > 1 && (
-            <div className="absolute bottom-3 right-3 px-2 py-1 rounded-md bg-background/85 backdrop-blur text-[10px] font-semibold flex items-center gap-1 text-warning">
+            <div className="absolute bottom-3 right-3 px-2 py-1 rounded-md bg-background/85 backdrop-blur text-[10px] font-semibold flex items-center gap-1 text-primary">
               <CloudRain className="w-3 h-3" />
               {weatherLabel} · maint ×{(weatherMultiplier ?? 1).toFixed(2)}
             </div>
