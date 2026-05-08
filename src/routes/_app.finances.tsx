@@ -92,6 +92,8 @@ function FinancesPage() {
         </div>
       </div>
 
+      <FinancialHealth income={monthlyIncome} expense={monthlyExpense} cash={cash} />
+
       <div className="rounded-2xl bg-card border border-border p-4">
         <div className="flex items-center gap-2 mb-3">
           <Banknote className="w-4 h-4 text-primary" />
