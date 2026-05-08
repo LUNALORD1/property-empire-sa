@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
 import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, PRIME_RATE, type Property } from "@/lib/game";
 import { useEffect, useMemo, useState } from "react";
+import { Overlay } from "@/components/Overlay";
+import { Z } from "@/lib/z";
 
 export type BuyOptions = { useBond: boolean; ltv: number; deposit: number; monthlyPayment: number };
 
@@ -158,6 +160,7 @@ export function PropertyCard({
         </div>
       </div>
     </div>
+    </Overlay>
   );
 }
 
