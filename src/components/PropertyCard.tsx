@@ -1,20 +1,39 @@
-import { Bed, Bath, MapPin, X, TrendingUp, Wrench } from "lucide-react";
+import { Bed, Bath, MapPin, X, TrendingUp, Wrench, Banknote, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
-import { computeMonthlyRent, computeMonthlyMaintenance, type Property } from "@/lib/game";
-import { useEffect } from "react";
+import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, PRIME_RATE, type Property } from "@/lib/game";
+import { useEffect, useMemo, useState } from "react";
+
+export type BuyOptions = { useBond: boolean; ltv: number; deposit: number; monthlyPayment: number };
 
 export function PropertyCard({
-  property, cityName, cash, onClose, onBuy, busy, owned,
+  property, cityName, cash, onClose, onBuy, busy, owned, canFinance,
+  adminUsed, adminCap,
 }: {
   property: Property; cityName?: string; cash: number;
-  onClose: () => void; onBuy: () => void; busy?: boolean; owned?: boolean;
+  onClose: () => void;
+  onBuy: (opts: BuyOptions) => void;
+  busy?: boolean; owned?: boolean;
+  canFinance?: boolean;
+  adminUsed: number; adminCap: number;
 }) {
   const rent = computeMonthlyRent(property);
   const maint = computeMonthlyMaintenance(property.listing_price);
-  const cashflow = rent - maint;
   const yieldPct = (rent * 12) / property.listing_price * 100;
-  const canAfford = cash >= property.listing_price;
+
+  const [useBond, setUseBond] = useState(false);
+  const [ltv, setLtv] = useState(85);
+
+  const principal = Math.round(property.listing_price * (ltv / 100));
+  const deposit = property.listing_price - principal;
+  const monthlyPayment = useMemo(
+    () => (useBond ? computeMonthlyPayment(principal, PRIME_RATE, 240) : 0),
+    [useBond, principal],
+  );
+  const cashflow = rent - maint - monthlyPayment;
+  const upfront = useBond ? deposit : property.listing_price;
+  const canAfford = cash >= upfront;
+  const wouldExceedCap = adminUsed + property.bedrooms > adminCap;
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -23,8 +42,8 @@ export function PropertyCard({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4" onClick={onClose}>
-      <div className="w-full sm:max-w-md bg-card border border-border sm:rounded-2xl rounded-t-2xl shadow-card overflow-hidden max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 animate-fade-in" onClick={onClose}>
+      <div className="w-full sm:max-w-md bg-card border border-border sm:rounded-2xl rounded-t-2xl shadow-card overflow-hidden max-h-[92vh] overflow-y-auto animate-scale-in" onClick={(e) => e.stopPropagation()}>
         <div className="relative aspect-[16/10] bg-muted">
           {property.photo_url && <img src={property.photo_url} alt={property.address} className="w-full h-full object-cover" />}
           <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-background/80 backdrop-blur grid place-items-center hover:bg-background" aria-label="Close">
@@ -46,17 +65,87 @@ export function PropertyCard({
             <span className="flex items-center gap-1.5"><Bath className="w-4 h-4 text-primary" />{property.bathrooms} bath</span>
             <span className="flex items-center gap-1.5 ml-auto"><TrendingUp className="w-4 h-4 text-success" />{yieldPct.toFixed(1)}% yield</span>
           </div>
-          <div className="grid grid-cols-3 gap-2 pt-1">
+          <div className="grid grid-cols-3 gap-2">
             <Stat label="Rent / mo" value={formatZAR(rent)} good />
             <Stat label="Maint / mo" value={formatZAR(maint)} icon={<Wrench className="w-3 h-3" />} />
-            <Stat label="Cashflow" value={formatZAR(cashflow)} good={cashflow > 0} />
+            <Stat label="Cashflow" value={formatZAR(cashflow)} good={cashflow > 0} bad={cashflow < 0} />
           </div>
+
+          {!owned && (
+            <>
+              {/* Financing */}
+              <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold flex items-center gap-1.5">
+                    <Banknote className="w-3.5 h-3.5 text-primary" /> Financing
+                  </div>
+                  <div className="flex rounded-lg overflow-hidden border border-border text-[11px] font-semibold">
+                    <button
+                      type="button"
+                      disabled={!canFinance && !useBond}
+                      onClick={() => setUseBond(false)}
+                      className={"px-2.5 py-1 transition-colors " + (!useBond ? "bg-gradient-gold text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+                    >Cash</button>
+                    <button
+                      type="button"
+                      disabled={!canFinance}
+                      onClick={() => setUseBond(true)}
+                      className={"px-2.5 py-1 transition-colors " + (useBond ? "bg-gradient-gold text-primary-foreground" : "text-muted-foreground hover:text-foreground disabled:opacity-40")}
+                    >Bond</button>
+                  </div>
+                </div>
+                {!canFinance && (
+                  <div className="text-[11px] text-muted-foreground">Buy at least one property in cash to unlock home loans.</div>
+                )}
+                {useBond && canFinance && (
+                  <>
+                    <div className="flex gap-1.5 mt-1">
+                      {[50, 70, 85, 90].map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setLtv(v)}
+                          className={"flex-1 py-1.5 rounded-md text-[11px] font-semibold border transition-colors " +
+                            (ltv === v ? "bg-primary/20 border-primary text-primary" : "bg-card border-border text-muted-foreground hover:text-foreground")}
+                        >{v}% LTV</button>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 pt-1">
+                      <Mini label="Deposit" value={formatZAR(deposit, { compact: true })} />
+                      <Mini label="Loan" value={formatZAR(principal, { compact: true })} />
+                      <Mini label="Repay/mo" value={formatZAR(monthlyPayment)} />
+                    </div>
+                    <div className="text-[10px] text-muted-foreground pt-0.5">Prime {PRIME_RATE}% · 20-year term</div>
+                  </>
+                )}
+              </div>
+
+              {/* Admin capacity */}
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                <span>Admin points after purchase</span>
+                <span className={(wouldExceedCap ? "text-destructive font-semibold" : "text-foreground font-medium")}>
+                  {adminUsed + property.bedrooms} / {adminCap}
+                </span>
+              </div>
+            </>
+          )}
+
           {owned ? (
             <div className="rounded-xl bg-success/15 text-success border border-success/30 p-3 text-sm font-medium text-center">You own this property</div>
           ) : (
-            <Button onClick={onBuy} disabled={!canAfford || busy}
-              className="w-full bg-gradient-gold hover:opacity-90 text-primary-foreground font-semibold shadow-gold h-12 text-base">
-              {canAfford ? `Buy for ${formatZAR(property.listing_price)}` : "Insufficient cash"}
+            <Button
+              onClick={() => onBuy({ useBond, ltv, deposit: useBond ? deposit : property.listing_price, monthlyPayment })}
+              disabled={!canAfford || busy || wouldExceedCap}
+              className="w-full bg-gradient-gold hover:opacity-90 text-primary-foreground font-semibold shadow-gold h-12 text-base"
+            >
+              <Wallet className="w-4 h-4" />
+              {wouldExceedCap
+                ? "Hire an assistant first"
+                : !canAfford
+                ? `Need ${formatZAR(upfront, { compact: true })} cash`
+                : useBond
+                ? `Pay ${formatZAR(deposit)} deposit`
+                : `Buy for ${formatZAR(property.listing_price)}`}
             </Button>
           )}
         </div>
@@ -65,11 +154,20 @@ export function PropertyCard({
   );
 }
 
-function Stat({ label, value, good, icon }: { label: string; value: string; good?: boolean; icon?: React.ReactNode }) {
+function Stat({ label, value, good, bad, icon }: { label: string; value: string; good?: boolean; bad?: boolean; icon?: React.ReactNode }) {
   return (
     <div className="rounded-lg bg-muted/50 border border-border p-2.5">
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground flex items-center gap-1">{icon}{label}</div>
-      <div className={"text-sm font-semibold tabular-nums " + (good ? "text-success" : "")}>{value}</div>
+      <div className={"text-sm font-semibold tabular-nums " + (good ? "text-success" : bad ? "text-destructive" : "")}>{value}</div>
+    </div>
+  );
+}
+
+function Mini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-center">
+      <div className="text-[9px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-xs font-semibold tabular-nums">{value}</div>
     </div>
   );
 }
