@@ -223,7 +223,7 @@ function FinancialHealth({ income, expense, cash }: { income: number; expense: n
         <div className="mt-3 text-xs text-destructive">
           <div className="font-semibold">⚠ Cash flow negative — you are burning through savings.</div>
           <div className="text-[11px] mt-0.5 opacity-90">
-            At this burn rate you have <strong>{runway}</strong> month{runway === 1 ? "" : "s"} of runway. Sell, raise rents, or fill vacancies fast.
+            At this burn rate you have <strong>{runway}</strong> month{runway === 1 ? "" : "s"} of runway. Fill vacancies, sell underperformers, or release expensive tenants fast.
           </div>
         </div>
       ) : (
