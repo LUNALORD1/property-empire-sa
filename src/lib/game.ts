@@ -3,6 +3,19 @@ import { checkAchievements } from "@/lib/achievements";
 
 export const PRIME_RATE = 11.75; // SA prime, %
 
+// ---------- Property tiers ----------
+export type Tier = 1 | 2 | 3 | 4 | 5;
+export const TIERS: Array<{ id: Tier; label: string; short: string; min: number; max: number; color: string }> = [
+  { id: 1, label: "Entry",    short: "Entry",    min: 0,            max: 500_000,    color: "bg-slate-500/20 text-slate-200 border-slate-400/40" },
+  { id: 2, label: "Mid Entry",short: "Mid",      min: 500_000,      max: 1_500_000,  color: "bg-sky-500/20 text-sky-200 border-sky-400/40" },
+  { id: 3, label: "Mid Range",short: "Mid+",     min: 1_500_000,    max: 4_000_000,  color: "bg-emerald-500/20 text-emerald-200 border-emerald-400/40" },
+  { id: 4, label: "Prestige", short: "Prestige", min: 4_000_000,    max: 12_000_000, color: "bg-violet-500/20 text-violet-200 border-violet-400/40" },
+  { id: 5, label: "Trophy",   short: "Trophy",   min: 12_000_000,   max: Infinity,   color: "bg-amber-500/25 text-amber-200 border-amber-400/50" },
+];
+export function tierForPrice(price: number): typeof TIERS[number] {
+  return TIERS.find((t) => price >= t.min && price < t.max) ?? TIERS[TIERS.length - 1];
+}
+
 export type City = {
   id: string;
   name: string;

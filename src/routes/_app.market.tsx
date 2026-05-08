@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useAssistants, useCities, useMarketProperties, usePlayerProperties, useProfile } from "@/lib/data-hooks";
 import { useAuth } from "@/hooks/use-auth";
 import { Bed, Bath, MapPin, TrendingUp } from "lucide-react";
-import { computeMonthlyRent, bedroomsToAdminPoints, totalAdminCap, type Property } from "@/lib/game";
+import { computeMonthlyRent, bedroomsToAdminPoints, totalAdminCap, tierForPrice, TIERS, type Property } from "@/lib/game";
 import { formatZAR } from "@/lib/format";
 import { PropertyCard, type BuyOptions } from "@/components/PropertyCard";
 import { buyProperty } from "@/lib/buy";
@@ -45,19 +45,16 @@ function MarketPage() {
   const adminCap = totalAdminCap(profile?.admin_points_cap ?? 10, assistants ?? []);
   const canFinance = (owned?.length ?? 0) > 0;
 
-  const tiers = [
-    { id: "all", label: "Any price", min: 0, max: Infinity },
-    { id: "under1m", label: "Under R1M", min: 0, max: 1_000_000 },
-    { id: "1to3", label: "R1M – R3M", min: 1_000_000, max: 3_000_000 },
-    { id: "3to6", label: "R3M – R6M", min: 3_000_000, max: 6_000_000 },
-    { id: "luxury", label: "R6M+", min: 6_000_000, max: Infinity },
+  const tierFilters = [
+    { id: "all", label: "All tiers", min: 0, max: Infinity },
+    ...TIERS.map((t) => ({ id: String(t.id), label: t.label, min: t.min, max: t.max })),
   ];
 
   const filtered = useMemo(() => {
-    const t = tiers.find((x) => x.id === tier)!;
+    const t = tierFilters.find((x) => x.id === tier)!;
     return (properties ?? []).filter((p) => {
       if (city !== "all" && p.city_id !== city) return false;
-      if (p.listing_price < t.min || p.listing_price > t.max) return false;
+      if (p.listing_price < t.min || p.listing_price >= t.max) return false;
       return true;
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,7 +92,7 @@ function MarketPage() {
           ))}
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 mt-1 -mx-1 px-1">
-          {tiers.map((t) => (
+          {tierFilters.map((t) => (
             <Chip key={t.id} active={tier === t.id} onClick={() => setTier(t.id)}>{t.label}</Chip>
           ))}
         </div>
@@ -104,12 +101,15 @@ function MarketPage() {
             const rent = computeMonthlyRent(p);
             const yieldPct = (rent * 12) / p.listing_price * 100;
             const isOwned = !!ownedMap[p.id];
+            const t = tierForPrice(p.listing_price);
             return (
               <button key={p.id} onClick={() => setSelected(p)} className="text-left rounded-2xl bg-gradient-card border border-border overflow-hidden shadow-card hover:border-primary/40 transition-colors">
                 <div className="aspect-[16/10] bg-muted relative">
                   {p.photo_url && <img src={p.photo_url} alt={p.address} loading="lazy" className="w-full h-full object-cover" />}
                   <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-background/85 text-[10px] font-medium">{cityById[p.city_id]?.name} · {p.suburb}</div>
-                  {isOwned && <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-success/90 text-[10px] font-bold uppercase">Owned</div>}
+                  {isOwned
+                    ? <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-success/90 text-[10px] font-bold uppercase">Owned</div>
+                    : <div className={"absolute top-2 right-2 px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase backdrop-blur " + t.color}>{t.short}</div>}
                 </div>
                 <div className="p-3 space-y-1.5">
                   <div className="flex items-baseline justify-between">
