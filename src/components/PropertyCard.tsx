@@ -1,4 +1,4 @@
-import { Bed, Bath, MapPin, X, TrendingUp, Wrench, Banknote, Wallet } from "lucide-react";
+import { Bed, Bath, MapPin, X, TrendingUp, Wrench, Banknote, Wallet, CloudRain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
 import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, PRIME_RATE, type Property } from "@/lib/game";
@@ -7,10 +7,10 @@ import { useEffect, useMemo, useState } from "react";
 export type BuyOptions = { useBond: boolean; ltv: number; deposit: number; monthlyPayment: number };
 
 export function PropertyCard({
-  property, cityName, cash, onClose, onBuy, busy, owned, canFinance,
+  property, cityName, weatherLabel, weatherMultiplier, cash, onClose, onBuy, busy, owned, canFinance,
   adminUsed, adminCap,
 }: {
-  property: Property; cityName?: string; cash: number;
+  property: Property; cityName?: string; weatherLabel?: string; weatherMultiplier?: number; cash: number;
   onClose: () => void;
   onBuy: (opts: BuyOptions) => void;
   busy?: boolean; owned?: boolean;
@@ -18,7 +18,7 @@ export function PropertyCard({
   adminUsed: number; adminCap: number;
 }) {
   const rent = computeMonthlyRent(property);
-  const maint = computeMonthlyMaintenance(property.listing_price);
+  const maint = computeMonthlyMaintenance(property.listing_price, weatherMultiplier ?? 1);
   const yieldPct = (rent * 12) / property.listing_price * 100;
 
   const [useBond, setUseBond] = useState(false);
@@ -52,6 +52,12 @@ export function PropertyCard({
           <div className="absolute bottom-3 left-3 px-2 py-1 rounded-md bg-background/85 backdrop-blur text-xs font-medium">
             {cityName} · {property.suburb}
           </div>
+          {weatherLabel && (weatherMultiplier ?? 1) > 1 && (
+            <div className="absolute bottom-3 right-3 px-2 py-1 rounded-md bg-background/85 backdrop-blur text-[10px] font-semibold flex items-center gap-1 text-warning">
+              <CloudRain className="w-3 h-3" />
+              {weatherLabel} · maint ×{(weatherMultiplier ?? 1).toFixed(2)}
+            </div>
+          )}
         </div>
         <div className="p-5 space-y-4">
           <div>
