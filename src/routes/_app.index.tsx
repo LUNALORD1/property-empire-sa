@@ -4,7 +4,8 @@ import { MapView } from "@/components/MapView";
 import { PropertyCard, type BuyOptions } from "@/components/PropertyCard";
 import { useAssistants, useCities, useMarketProperties, usePlayerProperties, useProfile } from "@/lib/data-hooks";
 import { useAuth } from "@/hooks/use-auth";
-import { bedroomsToAdminPoints, totalAdminCap, type Property } from "@/lib/game";
+import { bedroomsToAdminPoints, totalAdminCap, TIERS, type Property } from "@/lib/game";
+import { TIER_COLORS } from "@/components/MapView";
 import { buyProperty } from "@/lib/buy";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -79,14 +80,22 @@ function MapPage() {
   return (
     <div className="flex-1 relative">
       <div className="absolute inset-0">
-        <MapView properties={markers} ownedMap={ownedMap} onSelect={setSelected} cash={Number(profile?.cash ?? 0)} />
+        <MapView properties={markers} ownedMap={ownedMap} onSelect={setSelected} cash={Number(profile?.cash ?? 0)} cities={cities} />
       </div>
-      <div className="absolute top-3 left-3 right-3 z-[400] flex justify-center pointer-events-none">
-        <div className="pointer-events-auto rounded-full bg-card/90 backdrop-blur border border-border px-3 py-1.5 text-xs flex gap-3 items-center shadow-card flex-wrap justify-center max-w-[95vw]">
-          <Legend color="oklch(0.82 0.14 85)" label="Affordable" />
-          <Legend color="oklch(0.55 0.04 270)" label="Out of reach" />
-          <Legend color="oklch(0.62 0.18 155)" label="Rented" />
-          <Legend color="oklch(0.75 0.18 70)" label="Vacant" />
+      <div className="absolute bottom-20 left-3 z-[400] pointer-events-none sm:bottom-4">
+        <div className="pointer-events-auto rounded-2xl bg-card/70 backdrop-blur-xl border border-border/60 px-3 py-2.5 shadow-card max-w-[260px]">
+          <div className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground font-bold mb-1.5">Status</div>
+          <div className="flex gap-2.5 items-center flex-wrap text-[11px] mb-2">
+            <Legend color="oklch(0.62 0.18 155)" label="Rented" />
+            <Legend color="oklch(0.75 0.18 70)" label="Vacant" />
+            <Legend color="oklch(0.55 0.04 270)" label="Too pricey" />
+          </div>
+          <div className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground font-bold mb-1.5">Tier</div>
+          <div className="flex gap-2 items-center flex-wrap text-[11px]">
+            {TIERS.map((t) => (
+              <Legend key={t.id} color={TIER_COLORS[t.id]} label={t.short} />
+            ))}
+          </div>
         </div>
       </div>
       {selected && (
