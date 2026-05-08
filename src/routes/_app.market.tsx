@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useCities, useMarketProperties, usePlayerProperties, useProfile } from "@/lib/data-hooks";
+import { useAssistants, useCities, useMarketProperties, usePlayerProperties, useProfile } from "@/lib/data-hooks";
 import { useAuth } from "@/hooks/use-auth";
 import { Bed, Bath, MapPin, TrendingUp } from "lucide-react";
-import { computeMonthlyRent, computeMonthlyMaintenance, type Property } from "@/lib/game";
+import { computeMonthlyRent, bedroomsToAdminPoints, totalAdminCap, type Property } from "@/lib/game";
 import { formatZAR } from "@/lib/format";
-import { PropertyCard } from "@/components/PropertyCard";
-import { supabase } from "@/integrations/supabase/client";
+import { PropertyCard, type BuyOptions } from "@/components/PropertyCard";
+import { buyProperty } from "@/lib/buy";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -27,6 +27,7 @@ function MarketPage() {
   const { data: properties } = useMarketProperties();
   const { data: profile } = useProfile(user?.id);
   const { data: owned } = usePlayerProperties(user?.id);
+  const { data: assistants } = useAssistants(user?.id);
   const [city, setCity] = useState<string>("all");
   const [tier, setTier] = useState<string>("all");
   const [selected, setSelected] = useState<Property | null>(null);
@@ -38,6 +39,10 @@ function MarketPage() {
     (owned ?? []).forEach((o) => { m[o.property_id] = o.status === "rented" ? "rented" : "vacant"; });
     return m;
   }, [owned]);
+
+  const adminUsed = bedroomsToAdminPoints(owned ?? []);
+  const adminCap = totalAdminCap(profile?.admin_points_cap ?? 10, assistants ?? []);
+  const canFinance = (owned?.length ?? 0) > 0;
 
   const tiers = [
     { id: "all", label: "Any price", min: 0, max: Infinity },
@@ -57,28 +62,22 @@ function MarketPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [properties, city, tier]);
 
-  async function handleBuy() {
+  async function handleBuy(opts: BuyOptions) {
     if (!user || !selected) return;
     setBusy(true);
     try {
-      const monthlyRent = computeMonthlyRent(selected);
-      const monthlyMaint = computeMonthlyMaintenance(selected.listing_price);
-      const { error: ppErr } = await supabase.from("player_properties").insert({
-        player_id: user.id, property_id: selected.id, purchase_price: selected.listing_price,
-        current_value: selected.listing_price, monthly_rent: monthlyRent,
-        monthly_maintenance: monthlyMaint, status: "rented",
+      await buyProperty({
+        userId: user.id, property: selected,
+        cash: Number(profile?.cash ?? 0),
+        useBond: opts.useBond, ltv: opts.ltv,
       });
-      if (ppErr) throw ppErr;
-      await supabase.from("properties").update({ status: "sold" }).eq("id", selected.id);
-      const newCash = Number(profile?.cash ?? 0) - selected.listing_price;
-      await supabase.from("profiles").update({ cash: newCash }).eq("id", user.id);
-      await supabase.from("ledger").insert({ player_id: user.id, type: "purchase", amount: -selected.listing_price, property_id: selected.id, description: `Bought ${selected.address}` });
       toast.success(`Bought ${selected.suburb}`);
       setSelected(null);
       qc.invalidateQueries({ queryKey: ["profile", user.id] });
       qc.invalidateQueries({ queryKey: ["player_properties", user.id] });
       qc.invalidateQueries({ queryKey: ["properties"] });
       qc.invalidateQueries({ queryKey: ["ledger", user.id] });
+      qc.invalidateQueries({ queryKey: ["loans", user.id] });
     } catch (e: any) { toast.error(e.message ?? "Purchase failed"); } finally { setBusy(false); }
   }
 
@@ -132,6 +131,7 @@ function MarketPage() {
       {selected && (
         <PropertyCard property={selected} cityName={cityById[selected.city_id]?.name}
           cash={Number(profile?.cash ?? 0)} owned={!!ownedMap[selected.id]}
+          canFinance={canFinance} adminUsed={adminUsed} adminCap={adminCap}
           busy={busy} onClose={() => setSelected(null)} onBuy={handleBuy} />
       )}
     </div>

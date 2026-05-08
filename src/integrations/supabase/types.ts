@@ -375,6 +375,7 @@ export type Database = {
           display_name: string | null
           game_started_at: string
           id: string
+          last_luck_event_date: string | null
           last_tick_date: string | null
           onboarded: boolean
           updated_at: string
@@ -386,6 +387,7 @@ export type Database = {
           display_name?: string | null
           game_started_at?: string
           id: string
+          last_luck_event_date?: string | null
           last_tick_date?: string | null
           onboarded?: boolean
           updated_at?: string
@@ -397,6 +399,7 @@ export type Database = {
           display_name?: string | null
           game_started_at?: string
           id?: string
+          last_luck_event_date?: string | null
           last_tick_date?: string | null
           onboarded?: boolean
           updated_at?: string

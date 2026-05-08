@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { City, PlayerProperty, Property } from "@/lib/game";
+import type { Assistant, City, Loan, LuckEvent, PlayerProperty, Property } from "@/lib/game";
 
 export function useCities() {
   return useQuery({
@@ -63,5 +63,47 @@ export function useLedger(userId: string | undefined) {
       if (error) throw error;
       return data;
     },
+  });
+}
+
+export function useLoans(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["loans", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("loans").select("*").eq("player_id", userId!).order("started_at", { ascending: false });
+      if (error) throw error;
+      return data as Loan[];
+    },
+  });
+}
+
+export function useAssistants(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["assistants", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("assistants").select("*").eq("player_id", userId!).order("hired_at", { ascending: false });
+      if (error) throw error;
+      return data as Assistant[];
+    },
+  });
+}
+
+export function useLuckEvents(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["luck_events", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("luck_events")
+        .select("*")
+        .eq("player_id", userId!)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data as LuckEvent[];
+    },
+    refetchInterval: 30_000,
   });
 }
