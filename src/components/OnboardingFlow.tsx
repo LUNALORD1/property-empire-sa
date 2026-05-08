@@ -177,7 +177,8 @@ export function OnboardingFlow({
 function Coachmark({ children, anchor, onSkip }: { children: React.ReactNode; anchor: "top" | "bottom"; onSkip: () => void }) {
   // Non-blocking pointer overlay so users can still tap pins on the map.
   return (
-    <div className="fixed inset-0 z-[990] pointer-events-none animate-fade-in">
+    <OverlayPortal>
+    <div className="fixed inset-0 pointer-events-none animate-fade-in" style={{ zIndex: 2147482999 }}>
       <div
         className={
           "absolute left-1/2 -translate-x-1/2 w-[min(92vw,22rem)] pointer-events-auto " +
@@ -195,7 +196,13 @@ function Coachmark({ children, anchor, onSkip }: { children: React.ReactNode; an
         </div>
       </div>
     </div>
+    </OverlayPortal>
   );
+}
+
+function OverlayPortal({ children }: { children: React.ReactNode }) {
+  if (typeof document === "undefined") return <>{children}</>;
+  return createPortal(children, document.body);
 }
 
 function CoachIcon({ icon }: { icon: React.ReactNode }) {
