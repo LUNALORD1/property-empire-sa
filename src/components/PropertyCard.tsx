@@ -80,9 +80,12 @@ export function PropertyCard({
             <span className="flex items-center gap-1.5 ml-auto"><TrendingUp className="w-4 h-4 text-success" />{yieldPct.toFixed(1)}% yield</span>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <Stat label="Rent / mo" value={formatZAR(rent)} good />
+            <Stat label="Est. rent / mo" value={formatZAR(rent)} good />
             <Stat label="Maint / mo" value={formatZAR(maint)} icon={<Wrench className="w-3 h-3" />} />
             <Stat label="Cashflow" value={formatZAR(cashflow)} good={cashflow > 0} bad={cashflow < 0} />
+          </div>
+          <div className="-mt-2 text-[10px] text-muted-foreground italic">
+            Estimated rental income — actual rent depends on the tenant you select.
           </div>
 
           {!owned && (
