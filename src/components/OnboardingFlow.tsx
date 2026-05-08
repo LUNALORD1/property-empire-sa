@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +61,8 @@ export function OnboardingFlow({
   // ---- Step 1: full-screen "Name your empire" ----
   if (step === 1) {
     return (
-      <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-background animate-fade-in">
+      <OverlayPortal>
+      <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-background animate-fade-in" style={{ zIndex: 2147483000 }}>
         <div className="absolute inset-0 overflow-hidden">
           <img src={skyline} alt="" className="w-full h-full object-cover opacity-50" />
           <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
@@ -95,6 +97,7 @@ export function OnboardingFlow({
           </button>
         </div>
       </div>
+      </OverlayPortal>
     );
   }
 
@@ -141,7 +144,8 @@ export function OnboardingFlow({
   // ---- Step 4: daily tick explainer ----
   if (step === 4) {
     return (
-      <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur p-4 animate-fade-in">
+      <OverlayPortal>
+      <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur p-4 animate-fade-in" style={{ zIndex: 2147483000 }}>
         <div className="relative w-full sm:max-w-sm bg-card border border-primary/30 rounded-3xl shadow-gold overflow-hidden animate-scale-in">
           <div className="h-1 w-full bg-gradient-gold" />
           <div className="p-6 text-center">
@@ -161,6 +165,7 @@ export function OnboardingFlow({
           </div>
         </div>
       </div>
+      </OverlayPortal>
     );
   }
 
@@ -172,7 +177,8 @@ export function OnboardingFlow({
 function Coachmark({ children, anchor, onSkip }: { children: React.ReactNode; anchor: "top" | "bottom"; onSkip: () => void }) {
   // Non-blocking pointer overlay so users can still tap pins on the map.
   return (
-    <div className="fixed inset-0 z-[990] pointer-events-none animate-fade-in">
+    <OverlayPortal>
+    <div className="fixed inset-0 pointer-events-none animate-fade-in" style={{ zIndex: 2147482999 }}>
       <div
         className={
           "absolute left-1/2 -translate-x-1/2 w-[min(92vw,22rem)] pointer-events-auto " +
@@ -190,7 +196,13 @@ function Coachmark({ children, anchor, onSkip }: { children: React.ReactNode; an
         </div>
       </div>
     </div>
+    </OverlayPortal>
   );
+}
+
+function OverlayPortal({ children }: { children: React.ReactNode }) {
+  if (typeof document === "undefined") return <>{children}</>;
+  return createPortal(children, document.body);
 }
 
 function CoachIcon({ icon }: { icon: React.ReactNode }) {
