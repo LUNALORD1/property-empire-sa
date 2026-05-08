@@ -1,0 +1,1 @@
+ALTER TABLE public.cities ADD COLUMN IF NOT EXISTS weather_label text NOT NULL DEFAULT 'Clear';
