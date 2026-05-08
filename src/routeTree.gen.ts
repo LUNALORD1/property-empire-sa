@@ -15,6 +15,7 @@ import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppPortfolioRouteImport } from './routes/_app.portfolio'
 import { Route as AppMarketRouteImport } from './routes/_app.market'
+import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
 import { Route as AppFinancesRouteImport } from './routes/_app.finances'
 import { Route as ApiPublicHooksWeatherUpdateRouteImport } from './routes/api/public/hooks/weather-update'
 
@@ -47,6 +48,11 @@ const AppMarketRoute = AppMarketRouteImport.update({
   path: '/market',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLeaderboardRoute = AppLeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFinancesRoute = AppFinancesRouteImport.update({
   id: '/finances',
   path: '/finances',
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/finances': typeof AppFinancesRoute
+  '/leaderboard': typeof AppLeaderboardRoute
   '/market': typeof AppMarketRoute
   '/portfolio': typeof AppPortfolioRoute
   '/profile': typeof AppProfileRoute
@@ -71,6 +78,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/finances': typeof AppFinancesRoute
+  '/leaderboard': typeof AppLeaderboardRoute
   '/market': typeof AppMarketRoute
   '/portfolio': typeof AppPortfolioRoute
   '/profile': typeof AppProfileRoute
@@ -82,6 +90,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/finances': typeof AppFinancesRoute
+  '/_app/leaderboard': typeof AppLeaderboardRoute
   '/_app/market': typeof AppMarketRoute
   '/_app/portfolio': typeof AppPortfolioRoute
   '/_app/profile': typeof AppProfileRoute
@@ -94,6 +103,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/finances'
+    | '/leaderboard'
     | '/market'
     | '/portfolio'
     | '/profile'
@@ -102,6 +112,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/finances'
+    | '/leaderboard'
     | '/market'
     | '/portfolio'
     | '/profile'
@@ -112,6 +123,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/finances'
+    | '/_app/leaderboard'
     | '/_app/market'
     | '/_app/portfolio'
     | '/_app/profile'
@@ -169,6 +181,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMarketRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/leaderboard': {
+      id: '/_app/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof AppLeaderboardRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/finances': {
       id: '/_app/finances'
       path: '/finances'
@@ -188,6 +207,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppFinancesRoute: typeof AppFinancesRoute
+  AppLeaderboardRoute: typeof AppLeaderboardRoute
   AppMarketRoute: typeof AppMarketRoute
   AppPortfolioRoute: typeof AppPortfolioRoute
   AppProfileRoute: typeof AppProfileRoute
@@ -196,6 +216,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppFinancesRoute: AppFinancesRoute,
+  AppLeaderboardRoute: AppLeaderboardRoute,
   AppMarketRoute: AppMarketRoute,
   AppPortfolioRoute: AppPortfolioRoute,
   AppProfileRoute: AppProfileRoute,
@@ -212,3 +233,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
