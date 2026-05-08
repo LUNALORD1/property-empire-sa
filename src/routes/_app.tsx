@@ -95,7 +95,12 @@ function AppShell() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <TopBar cash={Number(profile?.cash ?? 0)} displayName={profile?.display_name} />
+      <TopBar
+        cash={Number(profile?.cash ?? 0)}
+        displayName={profile?.display_name}
+        lastLuckDate={profile?.last_luck_event_date ?? null}
+        ownsAny={(owned?.length ?? 0) > 0}
+      />
       <NewsTicker />
       <main className="flex-1 overflow-hidden flex flex-col">
         <Outlet />
