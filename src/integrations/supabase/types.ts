@@ -14,7 +14,457 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      achievements: {
+        Row: {
+          badge_key: string
+          id: string
+          player_id: string
+          unlocked_at: string
+        }
+        Insert: {
+          badge_key: string
+          id?: string
+          player_id: string
+          unlocked_at?: string
+        }
+        Update: {
+          badge_key?: string
+          id?: string
+          player_id?: string
+          unlocked_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievements_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistants: {
+        Row: {
+          active: boolean
+          hired_at: string
+          id: string
+          monthly_cost: number
+          player_id: string
+          points_added: number
+        }
+        Insert: {
+          active?: boolean
+          hired_at?: string
+          id?: string
+          monthly_cost?: number
+          player_id: string
+          points_added?: number
+        }
+        Update: {
+          active?: boolean
+          hired_at?: string
+          id?: string
+          monthly_cost?: number
+          player_id?: string
+          points_added?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistants_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cities: {
+        Row: {
+          annual_appreciation_pct: number
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          weather_multiplier: number
+        }
+        Insert: {
+          annual_appreciation_pct?: number
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+          weather_multiplier?: number
+        }
+        Update: {
+          annual_appreciation_pct?: number
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+          weather_multiplier?: number
+        }
+        Relationships: []
+      }
+      daily_ticks: {
+        Row: {
+          created_at: string
+          id: string
+          loan_paid: number
+          maintenance_paid: number
+          net_cashflow: number
+          player_id: string
+          rent_collected: number
+          summary: Json | null
+          tick_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          loan_paid?: number
+          maintenance_paid?: number
+          net_cashflow?: number
+          player_id: string
+          rent_collected?: number
+          summary?: Json | null
+          tick_date: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          loan_paid?: number
+          maintenance_paid?: number
+          net_cashflow?: number
+          player_id?: string
+          rent_collected?: number
+          summary?: Json | null
+          tick_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_ticks_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          player_id: string
+          property_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          player_id: string
+          property_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          player_id?: string
+          property_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loans: {
+        Row: {
+          active: boolean
+          balance: number
+          id: string
+          interest_rate: number
+          ltv: number
+          monthly_payment: number
+          player_id: string
+          player_property_id: string
+          principal: number
+          started_at: string
+          term_months: number
+        }
+        Insert: {
+          active?: boolean
+          balance: number
+          id?: string
+          interest_rate: number
+          ltv: number
+          monthly_payment: number
+          player_id: string
+          player_property_id: string
+          principal: number
+          started_at?: string
+          term_months?: number
+        }
+        Update: {
+          active?: boolean
+          balance?: number
+          id?: string
+          interest_rate?: number
+          ltv?: number
+          monthly_payment?: number
+          player_id?: string
+          player_property_id?: string
+          principal?: number
+          started_at?: string
+          term_months?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loans_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_player_property_id_fkey"
+            columns: ["player_property_id"]
+            isOneToOne: false
+            referencedRelation: "player_properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      luck_events: {
+        Row: {
+          acknowledged: boolean
+          amount: number | null
+          created_at: string
+          description: string | null
+          event_key: string
+          id: string
+          payload: Json | null
+          player_id: string
+          title: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          amount?: number | null
+          created_at?: string
+          description?: string | null
+          event_key: string
+          id?: string
+          payload?: Json | null
+          player_id: string
+          title: string
+        }
+        Update: {
+          acknowledged?: boolean
+          amount?: number | null
+          created_at?: string
+          description?: string | null
+          event_key?: string
+          id?: string
+          payload?: Json | null
+          player_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "luck_events_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_properties: {
+        Row: {
+          current_value: number
+          id: string
+          monthly_maintenance: number
+          monthly_rent: number
+          player_id: string
+          property_id: string
+          purchase_price: number
+          purchased_at: string
+          status: string
+        }
+        Insert: {
+          current_value: number
+          id?: string
+          monthly_maintenance: number
+          monthly_rent: number
+          player_id: string
+          property_id: string
+          purchase_price: number
+          purchased_at?: string
+          status?: string
+        }
+        Update: {
+          current_value?: number
+          id?: string
+          monthly_maintenance?: number
+          monthly_rent?: number
+          player_id?: string
+          property_id?: string
+          purchase_price?: number
+          purchased_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_properties_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_properties_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          admin_points_cap: number
+          cash: number
+          created_at: string
+          display_name: string | null
+          game_started_at: string
+          id: string
+          last_tick_date: string | null
+          onboarded: boolean
+          updated_at: string
+        }
+        Insert: {
+          admin_points_cap?: number
+          cash?: number
+          created_at?: string
+          display_name?: string | null
+          game_started_at?: string
+          id: string
+          last_tick_date?: string | null
+          onboarded?: boolean
+          updated_at?: string
+        }
+        Update: {
+          admin_points_cap?: number
+          cash?: number
+          created_at?: string
+          display_name?: string | null
+          game_started_at?: string
+          id?: string
+          last_tick_date?: string | null
+          onboarded?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          address: string
+          bathrooms: number
+          bedrooms: number
+          city_id: string
+          created_at: string
+          external_id: string | null
+          id: string
+          latitude: number
+          listing_price: number
+          longitude: number
+          photo_url: string | null
+          status: string
+          suburb: string
+          suburb_avg_price: number
+          suburb_avg_rent: number
+        }
+        Insert: {
+          address: string
+          bathrooms?: number
+          bedrooms?: number
+          city_id: string
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          latitude: number
+          listing_price: number
+          longitude: number
+          photo_url?: string | null
+          status?: string
+          suburb: string
+          suburb_avg_price: number
+          suburb_avg_rent: number
+        }
+        Update: {
+          address?: string
+          bathrooms?: number
+          bedrooms?: number
+          city_id?: string
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          latitude?: number
+          listing_price?: number
+          longitude?: number
+          photo_url?: string | null
+          status?: string
+          suburb?: string
+          suburb_avg_price?: number
+          suburb_avg_rent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
