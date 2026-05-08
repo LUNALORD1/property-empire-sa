@@ -173,12 +173,20 @@ async function maybeRollLuckEvent(userId: string, today: string, lastLuckDate: s
       const nv = Math.round(Number(pp.current_value) * (1 + amount / 100));
       await supabase.from("player_properties").update({ current_value: nv }).eq("id", pp.id);
     }
+    await supabase.from("ledger").insert({
+      player_id: userId, type: "luck", amount: 0,
+      description: `${def.title} (property values ${amount >= 0 ? "+" : ""}${amount}%)`,
+    });
   } else if (def.effect.kind === "rent_boost") {
     const { data: pps } = await supabase.from("player_properties").select("id, monthly_rent").eq("player_id", userId);
     for (const pp of pps ?? []) {
       const nr = Math.round(Number(pp.monthly_rent) * (1 + amount / 100));
       await supabase.from("player_properties").update({ monthly_rent: nr }).eq("id", pp.id);
     }
+    await supabase.from("ledger").insert({
+      player_id: userId, type: "luck", amount: 0,
+      description: `${def.title} (rents +${amount}%)`,
+    });
   }
 
   await supabase.from("luck_events").insert({
