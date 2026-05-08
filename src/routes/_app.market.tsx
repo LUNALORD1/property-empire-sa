@@ -131,6 +131,8 @@ function MarketPage() {
       </div>
       {selected && (
         <PropertyCard property={selected} cityName={cityById[selected.city_id]?.name}
+          weatherLabel={cityById[selected.city_id]?.weather_label}
+          weatherMultiplier={Number(cityById[selected.city_id]?.weather_multiplier ?? 1)}
           cash={Number(profile?.cash ?? 0)} owned={!!ownedMap[selected.id]}
           canFinance={canFinance} adminUsed={adminUsed} adminCap={adminCap}
           busy={busy} onClose={() => setSelected(null)} onBuy={handleBuy} />
