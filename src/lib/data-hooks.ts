@@ -146,3 +146,37 @@ export function useLeaderboard() {
     staleTime: 1000 * 60 * 10,
   });
 }
+
+export function useTenants(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["tenants", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("tenants")
+        .select("*, renter_type:renter_type_key(*)")
+        .eq("player_id", userId!);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useApplicantsCount(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["applicants_count", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("tenant_applicants")
+        .select("player_property_id")
+        .eq("player_id", userId!);
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      for (const r of data ?? []) {
+        map[r.player_property_id] = (map[r.player_property_id] ?? 0) + 1;
+      }
+      return map;
+    },
+  });
+}
