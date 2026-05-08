@@ -415,7 +415,7 @@ export async function processDailyTicks(userId: string) {
       const month = Number(d.slice(5, 7));
       const tiers = ["low", "medium", "high", "hot"];
       const drifts: { id: string; tier: string }[] = [];
-      const propIds = (pps ?? []).map((p) => p.property_id);
+      const propIds = ((pps as any[]) ?? []).map((p: any) => p.property_id);
       const { data: marketProps } = await supabase
         .from("properties")
         .select("id, demand_tier, is_university_suburb, is_coastal")
@@ -465,7 +465,7 @@ export async function processDailyTicks(userId: string) {
 
     // ----- Track peak net worth -----
     {
-      const portfolio = (pps ?? []).reduce((s, p) => s + Number(p.current_value), 0);
+      const portfolio = ((pps as any[]) ?? []).reduce((s: number, p: any) => s + Number(p.current_value), 0);
       const debtBalance = (loans ?? []).reduce((s, l) => s + Number(l.balance), 0);
       const nw = cash + portfolio - debtBalance;
       if (nw > peakNW) peakNW = nw;
@@ -480,7 +480,7 @@ export async function processDailyTicks(userId: string) {
 
       // Day 1: a random rented tenant leaves immediately
       if (dayInRed === 1) {
-        const rented = (pps ?? []).filter((p) => p.status === "rented");
+        const rented = ((pps as any[]) ?? []).filter((p: any) => p.status === "rented");
         if (rented.length) {
           const victim = rented[Math.floor(Math.random() * rented.length)];
           await (supabase as any).from("tenants").delete().eq("player_property_id", victim.id);
@@ -493,7 +493,7 @@ export async function processDailyTicks(userId: string) {
       }
       // Day 2: force-sell lowest value at -15%
       if (dayInRed === 2 && (pps ?? []).length > 0) {
-        const sorted = [...(pps ?? [])].sort((a, b) => Number(a.current_value) - Number(b.current_value));
+        const sorted = [...((pps as any[]) ?? [])].sort((a: any, b: any) => Number(a.current_value) - Number(b.current_value));
         const victim = sorted[0];
         const value = Math.round(Number(victim.current_value) * 0.85);
         const commission = Math.round(value * 0.05);
