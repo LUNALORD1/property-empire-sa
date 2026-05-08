@@ -18,6 +18,7 @@ import { Route as AppMarketRouteImport } from './routes/_app.market'
 import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
 import { Route as AppFinancesRouteImport } from './routes/_app.finances'
 import { Route as ApiPublicHooksWeatherUpdateRouteImport } from './routes/api/public/hooks/weather-update'
+import { Route as ApiPublicHooksLeaderboardRefreshRouteImport } from './routes/api/public/hooks/leaderboard-refresh'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -64,6 +65,12 @@ const ApiPublicHooksWeatherUpdateRoute =
     path: '/api/public/hooks/weather-update',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksLeaderboardRefreshRoute =
+  ApiPublicHooksLeaderboardRefreshRouteImport.update({
+    id: '/api/public/hooks/leaderboard-refresh',
+    path: '/api/public/hooks/leaderboard-refresh',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/market': typeof AppMarketRoute
   '/portfolio': typeof AppPortfolioRoute
   '/profile': typeof AppProfileRoute
+  '/api/public/hooks/leaderboard-refresh': typeof ApiPublicHooksLeaderboardRefreshRoute
   '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
 export interface FileRoutesByTo {
@@ -83,6 +91,7 @@ export interface FileRoutesByTo {
   '/portfolio': typeof AppPortfolioRoute
   '/profile': typeof AppProfileRoute
   '/': typeof AppIndexRoute
+  '/api/public/hooks/leaderboard-refresh': typeof ApiPublicHooksLeaderboardRefreshRoute
   '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
 export interface FileRoutesById {
@@ -95,6 +104,7 @@ export interface FileRoutesById {
   '/_app/portfolio': typeof AppPortfolioRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/': typeof AppIndexRoute
+  '/api/public/hooks/leaderboard-refresh': typeof ApiPublicHooksLeaderboardRefreshRoute
   '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
 export interface FileRouteTypes {
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/market'
     | '/portfolio'
     | '/profile'
+    | '/api/public/hooks/leaderboard-refresh'
     | '/api/public/hooks/weather-update'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/profile'
     | '/'
+    | '/api/public/hooks/leaderboard-refresh'
     | '/api/public/hooks/weather-update'
   id:
     | '__root__'
@@ -128,12 +140,14 @@ export interface FileRouteTypes {
     | '/_app/portfolio'
     | '/_app/profile'
     | '/_app/'
+    | '/api/public/hooks/leaderboard-refresh'
     | '/api/public/hooks/weather-update'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiPublicHooksLeaderboardRefreshRoute: typeof ApiPublicHooksLeaderboardRefreshRoute
   ApiPublicHooksWeatherUpdateRoute: typeof ApiPublicHooksWeatherUpdateRoute
 }
 
@@ -202,6 +216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksWeatherUpdateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/leaderboard-refresh': {
+      id: '/api/public/hooks/leaderboard-refresh'
+      path: '/api/public/hooks/leaderboard-refresh'
+      fullPath: '/api/public/hooks/leaderboard-refresh'
+      preLoaderRoute: typeof ApiPublicHooksLeaderboardRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -228,8 +249,19 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiPublicHooksLeaderboardRefreshRoute: ApiPublicHooksLeaderboardRefreshRoute,
   ApiPublicHooksWeatherUpdateRoute: ApiPublicHooksWeatherUpdateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
