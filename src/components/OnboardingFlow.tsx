@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Building2, MapPin, Hand, CalendarClock, ArrowRight } from "lucide-react";
+import { Building2, MapPin, Hand, CalendarClock, ArrowRight, ZoomIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import skyline from "@/assets/onboarding-skyline.jpg";
@@ -115,6 +115,11 @@ export function OnboardingFlow({
           <span className="inline-flex items-center gap-1.5"><Dot color="oklch(0.82 0.14 85)" /> gold pins are <b>for sale</b></span><br />
           <span className="inline-flex items-center gap-1.5"><Dot color="oklch(0.62 0.18 155)" /> green pins are <b>rented</b> (yours)</span><br />
           <span className="inline-flex items-center gap-1.5"><Dot color="oklch(0.75 0.18 70)" /> orange pins are <b>vacant</b></span>
+          <span className="block mt-2 pt-2 border-t border-border/50">
+            <ZoomIn className="w-3.5 h-3.5 inline mr-1 text-primary" />
+            <b>Pinch or scroll</b> to zoom into a city — pins cluster tight in
+            Cape Town, Joburg & Durban.
+          </span>
         </CoachBody>
         <CoachActions>
           <Button onClick={() => setStep(3)} className="bg-gradient-gold text-primary-foreground font-semibold shadow-gold h-10 px-5">
@@ -136,6 +141,10 @@ export function OnboardingFlow({
           You start with <b>R500,000</b> in cash. Pick a property anywhere on the map, then tap{" "}
           <span className="text-primary font-semibold">Buy</span>. Your first one must be cash —
           bonds unlock after that.
+          <span className="block mt-2 pt-2 border-t border-border/50 text-foreground/80">
+            Tip: buying <b>3+ properties in the same city</b> unlocks area
+            achievements and makes managing your empire easier.
+          </span>
         </CoachBody>
       </Coachmark>
     );
