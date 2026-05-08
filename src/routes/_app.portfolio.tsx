@@ -87,11 +87,16 @@ function PortfolioPage() {
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {properties.map((p) => {
-          const cashflow = Number(p.monthly_rent) - Number(p.monthly_maintenance);
           const tenant = tenantByProp.get(p.id);
           const applicants = applicantCounts?.[p.id] ?? 0;
           const meta = tenant ? rentMetaFor(tenant.renter_type_key) : null;
           const TenantIcon = meta?.icon;
+          const isRented = p.status === "rented" && !!tenant;
+          const isPaused = p.status === "evicting" || p.status === "selling";
+          const actualRent = isRented ? Number(tenant.monthly_rent) : 0;
+          const estRent = Number(p.monthly_rent);
+          const maint = Number(p.monthly_maintenance);
+          const cashflow = isPaused ? 0 : actualRent - maint;
           return (
             <div key={p.id} className="rounded-2xl bg-gradient-card border border-border overflow-hidden shadow-card">
               <div className="aspect-[16/9] bg-muted relative">
@@ -125,13 +130,25 @@ function PortfolioPage() {
                 <div className="flex justify-between items-end pt-1 border-t border-border">
                   <div>
                     <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Cashflow</div>
-                    <div className={"text-sm font-bold tabular-nums " + (cashflow >= 0 ? "text-success" : "text-destructive")}>
-                      {(cashflow >= 0 ? "+" : "−")}{formatZAR(Math.abs(cashflow))}
-                    </div>
+                    {isPaused ? (
+                      <div className="text-sm font-bold tabular-nums text-muted-foreground">—</div>
+                    ) : (
+                      <div className={"text-sm font-bold tabular-nums " + (cashflow >= 0 ? "text-success" : "text-destructive")}>
+                        {(cashflow >= 0 ? "+" : "−")}{formatZAR(Math.abs(cashflow))}
+                      </div>
+                    )}
                   </div>
                   <div className="text-right">
-                    <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Rent</div>
-                    <div className="text-sm font-semibold tabular-nums">{formatZAR(Number(p.monthly_rent))}</div>
+                    <div className={"text-[10px] uppercase tracking-wide " + (isRented ? "text-muted-foreground" : "text-muted-foreground/70")}>
+                      {isPaused ? "Rent" : isRented ? "Rent" : "Est. rent"}
+                    </div>
+                    {isPaused ? (
+                      <div className="text-sm font-semibold tabular-nums text-muted-foreground">—</div>
+                    ) : (
+                      <div className={"text-sm font-semibold tabular-nums " + (isRented ? "" : "text-muted-foreground/70 italic")}>
+                        {formatZAR(isRented ? actualRent : estRent)}
+                      </div>
+                    )}
                   </div>
                 </div>
 
