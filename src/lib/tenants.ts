@@ -85,8 +85,14 @@ export async function generateApplicants(opts: {
 
   // Pull renter types and filter eligible
   const { data: types } = await (supabase as any).from("renter_types").select("*");
-  const pool = ((types ?? []) as RenterType[]).filter((rt) => isEligible(rt, property));
-  if (pool.length === 0) return [];
+  const allTypes = (types ?? []) as RenterType[];
+  let pool = allTypes.filter((rt) => isEligible(rt, property));
+  // Guarantee at least one eligible type — Opportunist is the universal fallback
+  if (pool.length === 0) {
+    const opp = allTypes.find((rt) => rt.key === "opportunist");
+    if (opp) pool = [opp];
+    else return [];
+  }
 
   const baseRent = estimatedMonthlyRent(property);
   const picks: any[] = [];
@@ -107,6 +113,18 @@ export async function generateApplicants(opts: {
 
   // Clear any existing applicants for this property first
   await (supabase as any).from("tenant_applicants").delete().eq("player_property_id", playerPropertyId);
+  // Floor: every vacant property must have at least one applicant
+  if (picks.length === 0) {
+    const fallback = allTypes.find((rt) => rt.key === "opportunist") ?? pool[0];
+    if (fallback) {
+      picks.push({
+        player_id: userId,
+        player_property_id: playerPropertyId,
+        renter_type_key: fallback.key,
+        offered_rent: Math.round(baseRent * Number(fallback.rent_modifier)),
+      });
+    }
+  }
   if (picks.length) await (supabase as any).from("tenant_applicants").insert(picks);
   return picks;
 }
