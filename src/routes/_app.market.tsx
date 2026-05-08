@@ -9,6 +9,7 @@ import { PropertyCard, type BuyOptions } from "@/components/PropertyCard";
 import { buyProperty } from "@/lib/buy";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ACHIEVEMENTS_BY_KEY } from "@/lib/achievements";
 
 export const Route = createFileRoute("/_app/market")({
   head: () => ({
@@ -66,19 +67,24 @@ function MarketPage() {
     if (!user || !selected) return;
     setBusy(true);
     try {
-      await buyProperty({
+      const earned = await buyProperty({
         userId: user.id, property: selected,
         cash: Number(profile?.cash ?? 0),
         useBond: opts.useBond, ltv: opts.ltv,
         adminUsed, adminCap,
       });
       toast.success(`Bought ${selected.suburb}`);
+      (earned ?? []).forEach((k) => {
+        const a = ACHIEVEMENTS_BY_KEY[k];
+        if (a) toast(`${a.emoji} Achievement unlocked: ${a.title}`, { description: a.description });
+      });
       setSelected(null);
       qc.invalidateQueries({ queryKey: ["profile", user.id] });
       qc.invalidateQueries({ queryKey: ["player_properties", user.id] });
       qc.invalidateQueries({ queryKey: ["properties"] });
       qc.invalidateQueries({ queryKey: ["ledger", user.id] });
       qc.invalidateQueries({ queryKey: ["loans", user.id] });
+      qc.invalidateQueries({ queryKey: ["achievements", user.id] });
     } catch (e: any) { toast.error(e.message ?? "Purchase failed"); } finally { setBusy(false); }
   }
 

@@ -173,6 +173,39 @@ export type Database = {
         }
         Relationships: []
       }
+      leaderboard_snapshots: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          net_worth: number
+          player_id: string
+          properties_count: number
+          rank: number
+          snapshot_date: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          net_worth?: number
+          player_id: string
+          properties_count?: number
+          rank: number
+          snapshot_date: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          net_worth?: number
+          player_id?: string
+          properties_count?: number
+          rank?: number
+          snapshot_date?: string
+        }
+        Relationships: []
+      }
       ledger: {
         Row: {
           amount: number

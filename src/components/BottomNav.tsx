@@ -1,12 +1,12 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Map, Briefcase, Wallet, Store, User } from "lucide-react";
+import { Map, Briefcase, Wallet, Store, Trophy } from "lucide-react";
 
 const ITEMS = [
   { to: "/", label: "Map", icon: Map },
   { to: "/portfolio", label: "Portfolio", icon: Briefcase },
   { to: "/finances", label: "Finances", icon: Wallet },
   { to: "/market", label: "Market", icon: Store },
-  { to: "/profile", label: "Profile", icon: User },
+  { to: "/leaderboard", label: "Ranks", icon: Trophy },
 ] as const;
 
 export function BottomNav() {

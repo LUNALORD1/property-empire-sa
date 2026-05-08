@@ -1,14 +1,16 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { NewsTicker } from "@/components/NewsTicker";
-import { useLuckEvents, usePlayerProperties, useProfile } from "@/lib/data-hooks";
+import { useAchievements, useLuckEvents, usePlayerProperties, useProfile } from "@/lib/data-hooks";
 import { processDailyTicks, type LuckEvent } from "@/lib/game";
 import { DailyTickModal } from "@/components/DailyTickModal";
 import { LuckEventModal } from "@/components/LuckEventModal";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
+import { ACHIEVEMENTS_BY_KEY } from "@/lib/achievements";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
@@ -24,6 +26,8 @@ function AppShell() {
   const { data: profile } = useProfile(user?.id);
   const { data: luckEvents } = useLuckEvents(user?.id);
   const { data: owned } = usePlayerProperties(user?.id);
+  const { data: achievements } = useAchievements(user?.id);
+  const seenAchievementsRef = useRef<Set<string> | null>(null);
   const [tickSummary, setTickSummary] = useState<{ rent: number; maintenance: number; net: number } | null>(null);
 
   useEffect(() => {
@@ -56,6 +60,24 @@ function AppShell() {
 
   const pendingLuck: LuckEvent | undefined = (luckEvents ?? []).find((e) => !e.acknowledged);
   const showOnboarding = !!profile && !profile.onboarded;
+
+  // Toast newly-unlocked achievements (covers tick-driven ones).
+  useEffect(() => {
+    if (!achievements) return;
+    const keys = new Set(achievements.map((a: any) => a.badge_key));
+    if (seenAchievementsRef.current === null) {
+      // First load — don't spam old badges.
+      seenAchievementsRef.current = keys;
+      return;
+    }
+    const fresh: string[] = [];
+    keys.forEach((k) => { if (!seenAchievementsRef.current!.has(k)) fresh.push(k); });
+    fresh.forEach((k) => {
+      const a = ACHIEVEMENTS_BY_KEY[k];
+      if (a) toast(`${a.emoji} Achievement unlocked: ${a.title}`, { description: a.description });
+    });
+    seenAchievementsRef.current = keys;
+  }, [achievements]);
 
   async function ackLuck() {
     if (!pendingLuck || !user) return;

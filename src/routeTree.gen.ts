@@ -15,8 +15,10 @@ import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppPortfolioRouteImport } from './routes/_app.portfolio'
 import { Route as AppMarketRouteImport } from './routes/_app.market'
+import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
 import { Route as AppFinancesRouteImport } from './routes/_app.finances'
 import { Route as ApiPublicHooksWeatherUpdateRouteImport } from './routes/api/public/hooks/weather-update'
+import { Route as ApiPublicHooksLeaderboardRefreshRouteImport } from './routes/api/public/hooks/leaderboard-refresh'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -47,6 +49,11 @@ const AppMarketRoute = AppMarketRouteImport.update({
   path: '/market',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLeaderboardRoute = AppLeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFinancesRoute = AppFinancesRouteImport.update({
   id: '/finances',
   path: '/finances',
@@ -58,23 +65,33 @@ const ApiPublicHooksWeatherUpdateRoute =
     path: '/api/public/hooks/weather-update',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksLeaderboardRefreshRoute =
+  ApiPublicHooksLeaderboardRefreshRouteImport.update({
+    id: '/api/public/hooks/leaderboard-refresh',
+    path: '/api/public/hooks/leaderboard-refresh',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/finances': typeof AppFinancesRoute
+  '/leaderboard': typeof AppLeaderboardRoute
   '/market': typeof AppMarketRoute
   '/portfolio': typeof AppPortfolioRoute
   '/profile': typeof AppProfileRoute
+  '/api/public/hooks/leaderboard-refresh': typeof ApiPublicHooksLeaderboardRefreshRoute
   '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/finances': typeof AppFinancesRoute
+  '/leaderboard': typeof AppLeaderboardRoute
   '/market': typeof AppMarketRoute
   '/portfolio': typeof AppPortfolioRoute
   '/profile': typeof AppProfileRoute
   '/': typeof AppIndexRoute
+  '/api/public/hooks/leaderboard-refresh': typeof ApiPublicHooksLeaderboardRefreshRoute
   '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
 export interface FileRoutesById {
@@ -82,10 +99,12 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/finances': typeof AppFinancesRoute
+  '/_app/leaderboard': typeof AppLeaderboardRoute
   '/_app/market': typeof AppMarketRoute
   '/_app/portfolio': typeof AppPortfolioRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/': typeof AppIndexRoute
+  '/api/public/hooks/leaderboard-refresh': typeof ApiPublicHooksLeaderboardRefreshRoute
   '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
 export interface FileRouteTypes {
@@ -94,34 +113,41 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/finances'
+    | '/leaderboard'
     | '/market'
     | '/portfolio'
     | '/profile'
+    | '/api/public/hooks/leaderboard-refresh'
     | '/api/public/hooks/weather-update'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/finances'
+    | '/leaderboard'
     | '/market'
     | '/portfolio'
     | '/profile'
     | '/'
+    | '/api/public/hooks/leaderboard-refresh'
     | '/api/public/hooks/weather-update'
   id:
     | '__root__'
     | '/_app'
     | '/login'
     | '/_app/finances'
+    | '/_app/leaderboard'
     | '/_app/market'
     | '/_app/portfolio'
     | '/_app/profile'
     | '/_app/'
+    | '/api/public/hooks/leaderboard-refresh'
     | '/api/public/hooks/weather-update'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiPublicHooksLeaderboardRefreshRoute: typeof ApiPublicHooksLeaderboardRefreshRoute
   ApiPublicHooksWeatherUpdateRoute: typeof ApiPublicHooksWeatherUpdateRoute
 }
 
@@ -169,6 +195,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMarketRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/leaderboard': {
+      id: '/_app/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof AppLeaderboardRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/finances': {
       id: '/_app/finances'
       path: '/finances'
@@ -183,11 +216,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksWeatherUpdateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/leaderboard-refresh': {
+      id: '/api/public/hooks/leaderboard-refresh'
+      path: '/api/public/hooks/leaderboard-refresh'
+      fullPath: '/api/public/hooks/leaderboard-refresh'
+      preLoaderRoute: typeof ApiPublicHooksLeaderboardRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AppRouteChildren {
   AppFinancesRoute: typeof AppFinancesRoute
+  AppLeaderboardRoute: typeof AppLeaderboardRoute
   AppMarketRoute: typeof AppMarketRoute
   AppPortfolioRoute: typeof AppPortfolioRoute
   AppProfileRoute: typeof AppProfileRoute
@@ -196,6 +237,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppFinancesRoute: AppFinancesRoute,
+  AppLeaderboardRoute: AppLeaderboardRoute,
   AppMarketRoute: AppMarketRoute,
   AppPortfolioRoute: AppPortfolioRoute,
   AppProfileRoute: AppProfileRoute,
@@ -207,6 +249,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiPublicHooksLeaderboardRefreshRoute: ApiPublicHooksLeaderboardRefreshRoute,
   ApiPublicHooksWeatherUpdateRoute: ApiPublicHooksWeatherUpdateRoute,
 }
 export const routeTree = rootRouteImport
