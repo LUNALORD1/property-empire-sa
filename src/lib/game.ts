@@ -9,6 +9,7 @@ export type City = {
   longitude: number;
   annual_appreciation_pct: number;
   weather_multiplier: number;
+  weather_label?: string;
 };
 
 export type Property = {

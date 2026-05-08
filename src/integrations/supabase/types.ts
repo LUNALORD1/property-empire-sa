@@ -86,6 +86,7 @@ export type Database = {
           latitude: number
           longitude: number
           name: string
+          weather_label: string
           weather_multiplier: number
         }
         Insert: {
@@ -95,6 +96,7 @@ export type Database = {
           latitude: number
           longitude: number
           name: string
+          weather_label?: string
           weather_multiplier?: number
         }
         Update: {
@@ -104,6 +106,7 @@ export type Database = {
           latitude?: number
           longitude?: number
           name?: string
+          weather_label?: string
           weather_multiplier?: number
         }
         Relationships: []

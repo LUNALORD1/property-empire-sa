@@ -16,6 +16,7 @@ import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppPortfolioRouteImport } from './routes/_app.portfolio'
 import { Route as AppMarketRouteImport } from './routes/_app.market'
 import { Route as AppFinancesRouteImport } from './routes/_app.finances'
+import { Route as ApiPublicHooksWeatherUpdateRouteImport } from './routes/api/public/hooks/weather-update'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -51,6 +52,12 @@ const AppFinancesRoute = AppFinancesRouteImport.update({
   path: '/finances',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicHooksWeatherUpdateRoute =
+  ApiPublicHooksWeatherUpdateRouteImport.update({
+    id: '/api/public/hooks/weather-update',
+    path: '/api/public/hooks/weather-update',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/market': typeof AppMarketRoute
   '/portfolio': typeof AppPortfolioRoute
   '/profile': typeof AppProfileRoute
+  '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -67,6 +75,7 @@ export interface FileRoutesByTo {
   '/portfolio': typeof AppPortfolioRoute
   '/profile': typeof AppProfileRoute
   '/': typeof AppIndexRoute
+  '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,6 +86,7 @@ export interface FileRoutesById {
   '/_app/portfolio': typeof AppPortfolioRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/': typeof AppIndexRoute
+  '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,8 +97,16 @@ export interface FileRouteTypes {
     | '/market'
     | '/portfolio'
     | '/profile'
+    | '/api/public/hooks/weather-update'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/finances' | '/market' | '/portfolio' | '/profile' | '/'
+  to:
+    | '/login'
+    | '/finances'
+    | '/market'
+    | '/portfolio'
+    | '/profile'
+    | '/'
+    | '/api/public/hooks/weather-update'
   id:
     | '__root__'
     | '/_app'
@@ -98,11 +116,13 @@ export interface FileRouteTypes {
     | '/_app/portfolio'
     | '/_app/profile'
     | '/_app/'
+    | '/api/public/hooks/weather-update'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiPublicHooksWeatherUpdateRoute: typeof ApiPublicHooksWeatherUpdateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -156,6 +176,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppFinancesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/hooks/weather-update': {
+      id: '/api/public/hooks/weather-update'
+      path: '/api/public/hooks/weather-update'
+      fullPath: '/api/public/hooks/weather-update'
+      preLoaderRoute: typeof ApiPublicHooksWeatherUpdateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -180,6 +207,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiPublicHooksWeatherUpdateRoute: ApiPublicHooksWeatherUpdateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
