@@ -24,26 +24,44 @@ export const TIER_COLORS: Record<number, string> = {
 const STATUS_COLORS = {
   rented: "oklch(0.62 0.18 155)",
   vacant: "oklch(0.75 0.18 70)",
-  unaffordable: "oklch(0.55 0.04 270)",
+  unaffordable: "oklch(0.58 0.20 25)", // red-ish lock badge
 };
 
-function pinSvg(color: string, dim: boolean, owned: boolean) {
-  const opacity = dim ? 0.55 : 1;
-  const ringColor = owned ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.85)";
-  // Slightly larger pin (34px) with soft glow
+type PinStatus = "rented" | "vacant" | "unaffordable" | "available";
+
+function pinSvg(tierColor: string, status: PinStatus) {
+  // Ring + badge convey status; body color always = tier color so tier stays visible.
+  const ringColor =
+    status === "rented" ? STATUS_COLORS.rented
+    : status === "vacant" ? STATUS_COLORS.vacant
+    : status === "unaffordable" ? "rgba(180,190,210,0.55)"
+    : "rgba(255,255,255,0.95)";
+  const ringWidth = status === "rented" || status === "vacant" ? 3 : 2;
+  const bodyOpacity = status === "unaffordable" ? 0.78 : 1;
+
+  const badge =
+    status === "rented"
+      ? `<div class="pe-pin-badge" style="background:${STATUS_COLORS.rented}">✓</div>`
+      : status === "vacant"
+      ? `<div class="pe-pin-badge" style="background:${STATUS_COLORS.vacant};color:#1a1a1a">●</div>`
+      : status === "unaffordable"
+      ? `<div class="pe-pin-badge" style="background:${STATUS_COLORS.unaffordable}">🔒</div>`
+      : "";
+
   return `
-    <div class="pe-pin" style="--pin-color:${color};opacity:${opacity};">
-      <div class="pe-pin-glow" style="background:${color}"></div>
-      <div class="pe-pin-body" style="background:linear-gradient(155deg, ${color} 0%, color-mix(in oklab, ${color} 70%, black) 100%);border-color:${ringColor};">
+    <div class="pe-pin" style="--pin-color:${tierColor};">
+      <div class="pe-pin-glow" style="background:${tierColor}"></div>
+      <div class="pe-pin-body" style="background:linear-gradient(155deg, ${tierColor} 0%, color-mix(in oklab, ${tierColor} 70%, black) 100%);border-color:${ringColor};border-width:${ringWidth}px;opacity:${bodyOpacity};">
         <div class="pe-pin-dot"></div>
       </div>
+      ${badge}
     </div>`;
 }
 
-function makePin(color: string, dim = false, owned = false) {
+function makePin(tierColor: string, status: PinStatus) {
   return L.divIcon({
     className: "pe-pin-wrap",
-    html: pinSvg(color, dim, owned),
+    html: pinSvg(tierColor, status),
     iconSize: [34, 42],
     iconAnchor: [17, 40],
   });
@@ -88,10 +106,10 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
   // Pre-build icon cache so identical pins reuse divIcons
   const iconFor = useMemo(() => {
     const cache = new Map<string, L.DivIcon>();
-    return (key: string, color: string, dim: boolean, owned: boolean) => {
-      const k = `${key}|${color}|${dim}|${owned}`;
+    return (tierColor: string, status: PinStatus) => {
+      const k = `${tierColor}|${status}`;
       let icon = cache.get(k);
-      if (!icon) { icon = makePin(color, dim, owned); cache.set(k, icon); }
+      if (!icon) { icon = makePin(tierColor, status); cache.set(k, icon); }
       return icon;
     };
   }, []);
@@ -167,15 +185,15 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
           const price = Number(p.listing_price);
           const affordable = cash >= price;
           const tier = tierForPrice(price);
+          const tierColor = TIER_COLORS[tier.id];
 
-          let color: string;
-          if (owned === "rented") color = STATUS_COLORS.rented;
-          else if (owned === "vacant") color = STATUS_COLORS.vacant;
-          else if (!affordable) color = STATUS_COLORS.unaffordable;
-          else color = TIER_COLORS[tier.id];
+          const status: PinStatus =
+            owned === "rented" ? "rented"
+            : owned === "vacant" ? "vacant"
+            : !affordable ? "unaffordable"
+            : "available";
 
-          const dim = !owned && !affordable;
-          const icon = iconFor(`t${tier.id}-${owned ?? "n"}`, color, dim, !!owned);
+          const icon = iconFor(tierColor, status);
 
           const tooltipLabel = owned
             ? (owned === "rented" ? "Rented · yours" : "Vacant · yours")
@@ -190,7 +208,7 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
             >
               <Tooltip direction="top" offset={[0, -36]} opacity={1} sticky className="pe-tooltip">
                 <div style={{ minWidth: 160 }}>
-                  <div style={{ fontSize: 11, color, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
+                  <div style={{ fontSize: 11, color: tierColor, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
                     {tooltipLabel}
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{formatZAR(price)}</div>
