@@ -282,7 +282,7 @@ export async function processDailyTicks(userId: string) {
     let rentTotal = 0, maintTotal = 0, loanTotal = 0;
     const ledgerRows: any[] = [];
 
-    for (const pp of pps ?? []) {
+    for (const pp of (pps as any[]) ?? []) {
       const weather = (pp as any).properties?.cities?.weather_multiplier ?? 1.0;
       const appreciation = (pp as any).properties?.cities?.annual_appreciation_pct ?? 5.0;
       const propertyId = pp.property_id;
@@ -420,7 +420,7 @@ export async function processDailyTicks(userId: string) {
         .from("properties")
         .select("id, demand_tier, is_university_suburb, is_coastal")
         .in("id", propIds as any);
-      for (const mp of marketProps ?? []) {
+      for (const mp of (marketProps as any[]) ?? []) {
         let tier = (mp as any).demand_tier ?? "medium";
         // Seasonal overrides
         if ((mp as any).is_university_suburb && (month === 1 || month === 2)) tier = "hot";
