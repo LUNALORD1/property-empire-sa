@@ -78,10 +78,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Property Empire SA — Build Your SA Real Estate Portfolio" },
       { name: "description", content: "A South African real estate simulation game. Buy real listings, collect rent monthly, and grow your property empire across Cape Town, Johannesburg, Pretoria, Durban and PE." },
       { name: "author", content: "Property Empire SA" },
-      { property: "og:title", content: "Property Empire SA" },
-      { property: "og:description", content: "Build a SA real estate empire. 1 real day = 1 in-game month." },
+      { property: "og:title", content: "Property Empire SA — Build Your SA Real Estate Portfolio" },
+      { property: "og:description", content: "A South African real estate simulation game. Buy real listings, collect rent monthly, and grow your property empire across Cape Town, Johannesburg, Pretoria, Durban and PE." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Property Empire SA — Build Your SA Real Estate Portfolio" },
+      { name: "twitter:description", content: "A South African real estate simulation game. Buy real listings, collect rent monthly, and grow your property empire across Cape Town, Johannesburg, Pretoria, Durban and PE." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7e9931a1-c352-4769-a58f-ebc377587f3f/id-preview-d2755f52--deb04029-b629-4747-9c56-992de584b5e7.lovable.app-1778253723718.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7e9931a1-c352-4769-a58f-ebc377587f3f/id-preview-d2755f52--deb04029-b629-4747-9c56-992de584b5e7.lovable.app-1778253723718.png" },
     ],
     links: [
       {
