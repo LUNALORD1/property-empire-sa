@@ -140,7 +140,19 @@ async function maybeRollLuckEvent(userId: string, today: string, lastLuckDate: s
     const now = new Date(today + "T00:00:00").getTime();
     if ((now - last) / 86400000 < 2) return;
   }
-  const def = pickLuck();
+  // Don't stack: if there's an unacknowledged event already pending, skip.
+  const { data: pending } = await supabase
+    .from("luck_events")
+    .select("id, event_key")
+    .eq("player_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const lastEvent = pending?.[0];
+  if (lastEvent && (lastEvent as any).id && !(await isAcknowledged(lastEvent.id))) return;
+  const lastKey = lastEvent?.event_key;
+  // Don't repeat the same event back-to-back: re-roll up to 5 times.
+  let def = pickLuck();
+  for (let i = 0; i < 5 && def.key === lastKey; i++) def = pickLuck();
   const span = def.effect.max - def.effect.min;
   const raw = def.effect.min + Math.random() * span;
   const amount = def.effect.kind === "cash" ? Math.round(raw / 500) * 500 : Number(raw.toFixed(2));
@@ -176,6 +188,11 @@ async function maybeRollLuckEvent(userId: string, today: string, lastLuckDate: s
     payload,
   });
   await supabase.from("profiles").update({ last_luck_event_date: today }).eq("id", userId);
+}
+
+async function isAcknowledged(id: string) {
+  const { data } = await supabase.from("luck_events").select("acknowledged").eq("id", id).single();
+  return !!data?.acknowledged;
 }
 
 /**
