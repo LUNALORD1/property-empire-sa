@@ -354,7 +354,9 @@ export type Database = {
       }
       player_properties: {
         Row: {
+          condition_score: number
           current_value: number
+          evicting_until: string | null
           id: string
           monthly_maintenance: number
           monthly_rent: number
@@ -362,10 +364,13 @@ export type Database = {
           property_id: string
           purchase_price: number
           purchased_at: string
+          selling_notice_until: string | null
           status: string
         }
         Insert: {
+          condition_score?: number
           current_value: number
+          evicting_until?: string | null
           id?: string
           monthly_maintenance: number
           monthly_rent: number
@@ -373,10 +378,13 @@ export type Database = {
           property_id: string
           purchase_price: number
           purchased_at?: string
+          selling_notice_until?: string | null
           status?: string
         }
         Update: {
+          condition_score?: number
           current_value?: number
+          evicting_until?: string | null
           id?: string
           monthly_maintenance?: number
           monthly_rent?: number
@@ -384,6 +392,7 @@ export type Database = {
           property_id?: string
           purchase_price?: number
           purchased_at?: string
+          selling_notice_until?: string | null
           status?: string
         }
         Relationships: [
@@ -409,11 +418,15 @@ export type Database = {
           cash: number
           created_at: string
           display_name: string | null
+          game_over: boolean
           game_started_at: string
           id: string
           last_luck_event_date: string | null
           last_tick_date: string | null
           onboarded: boolean
+          peak_net_worth: number
+          red_zone_started_at: string | null
+          total_properties_ever: number
           updated_at: string
         }
         Insert: {
@@ -421,11 +434,15 @@ export type Database = {
           cash?: number
           created_at?: string
           display_name?: string | null
+          game_over?: boolean
           game_started_at?: string
           id: string
           last_luck_event_date?: string | null
           last_tick_date?: string | null
           onboarded?: boolean
+          peak_net_worth?: number
+          red_zone_started_at?: string | null
+          total_properties_ever?: number
           updated_at?: string
         }
         Update: {
@@ -433,11 +450,15 @@ export type Database = {
           cash?: number
           created_at?: string
           display_name?: string | null
+          game_over?: boolean
           game_started_at?: string
           id?: string
           last_luck_event_date?: string | null
           last_tick_date?: string | null
           onboarded?: boolean
+          peak_net_worth?: number
+          red_zone_started_at?: string | null
+          total_properties_ever?: number
           updated_at?: string
         }
         Relationships: []
@@ -449,12 +470,16 @@ export type Database = {
           bedrooms: number
           city_id: string
           created_at: string
+          demand_tier: string
           external_id: string | null
           id: string
+          is_coastal: boolean
+          is_university_suburb: boolean
           latitude: number
           listing_price: number
           longitude: number
           photo_url: string | null
+          single_storey: boolean
           status: string
           suburb: string
           suburb_avg_price: number
@@ -466,12 +491,16 @@ export type Database = {
           bedrooms?: number
           city_id: string
           created_at?: string
+          demand_tier?: string
           external_id?: string | null
           id?: string
+          is_coastal?: boolean
+          is_university_suburb?: boolean
           latitude: number
           listing_price: number
           longitude: number
           photo_url?: string | null
+          single_storey?: boolean
           status?: string
           suburb: string
           suburb_avg_price: number
@@ -483,12 +512,16 @@ export type Database = {
           bedrooms?: number
           city_id?: string
           created_at?: string
+          demand_tier?: string
           external_id?: string | null
           id?: string
+          is_coastal?: boolean
+          is_university_suburb?: boolean
           latitude?: number
           listing_price?: number
           longitude?: number
           photo_url?: string | null
+          single_storey?: boolean
           status?: string
           suburb?: string
           suburb_avg_price?: number
@@ -503,6 +536,123 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      renter_types: {
+        Row: {
+          damage_risk: string
+          display_name: string
+          flavour: string | null
+          icon_key: string | null
+          key: string
+          lease_months: number
+          low_demand_only: boolean
+          max_beds: number | null
+          min_beds: number
+          reliability: number
+          rent_modifier: number
+          single_storey_only: boolean
+          university_only: boolean
+        }
+        Insert: {
+          damage_risk: string
+          display_name: string
+          flavour?: string | null
+          icon_key?: string | null
+          key: string
+          lease_months: number
+          low_demand_only?: boolean
+          max_beds?: number | null
+          min_beds?: number
+          reliability: number
+          rent_modifier: number
+          single_storey_only?: boolean
+          university_only?: boolean
+        }
+        Update: {
+          damage_risk?: string
+          display_name?: string
+          flavour?: string | null
+          icon_key?: string | null
+          key?: string
+          lease_months?: number
+          low_demand_only?: boolean
+          max_beds?: number | null
+          min_beds?: number
+          reliability?: number
+          rent_modifier?: number
+          single_storey_only?: boolean
+          university_only?: boolean
+        }
+        Relationships: []
+      }
+      tenant_applicants: {
+        Row: {
+          generated_at: string
+          id: string
+          offered_rent: number
+          player_id: string
+          player_property_id: string
+          renter_type_key: string
+        }
+        Insert: {
+          generated_at?: string
+          id?: string
+          offered_rent: number
+          player_id: string
+          player_property_id: string
+          renter_type_key: string
+        }
+        Update: {
+          generated_at?: string
+          id?: string
+          offered_rent?: number
+          player_id?: string
+          player_property_id?: string
+          renter_type_key?: string
+        }
+        Relationships: []
+      }
+      tenants: {
+        Row: {
+          consecutive_missed_payments: number
+          created_at: string
+          happiness: number
+          id: string
+          lease_end: string
+          lease_start: string
+          monthly_rent: number
+          player_id: string
+          player_property_id: string
+          renter_type_key: string
+          status: string
+        }
+        Insert: {
+          consecutive_missed_payments?: number
+          created_at?: string
+          happiness?: number
+          id?: string
+          lease_end: string
+          lease_start?: string
+          monthly_rent: number
+          player_id: string
+          player_property_id: string
+          renter_type_key: string
+          status?: string
+        }
+        Update: {
+          consecutive_missed_payments?: number
+          created_at?: string
+          happiness?: number
+          id?: string
+          lease_end?: string
+          lease_start?: string
+          monthly_rent?: number
+          player_id?: string
+          player_property_id?: string
+          renter_type_key?: string
+          status?: string
+        }
+        Relationships: []
       }
     }
     Views: {

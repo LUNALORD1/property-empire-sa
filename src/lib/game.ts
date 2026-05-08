@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { checkAchievements } from "@/lib/achievements";
+import { finaliseSale, generateApplicants, DAMAGE_RISK_PCT, type RenterType } from "@/lib/tenants";
 
 export const PRIME_RATE = 11.75; // SA prime, %
 
@@ -220,10 +221,11 @@ async function maybeRollLuckEvent(userId: string, today: string, lastLuckDate: s
 export async function processDailyTicks(userId: string) {
   const { data: profile } = await supabase
     .from("profiles")
-    .select("cash, last_tick_date, game_started_at, last_luck_event_date")
+    .select("cash, last_tick_date, game_started_at, last_luck_event_date, peak_net_worth, red_zone_started_at, game_over")
     .eq("id", userId)
     .single();
   if (!profile) return null;
+  if ((profile as any).game_over) return null;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -231,8 +233,19 @@ export async function processDailyTicks(userId: string) {
 
   const { data: pps } = await supabase
     .from("player_properties")
-    .select("id, current_value, monthly_rent, monthly_maintenance, status, property_id, properties:property_id(city_id, cities:city_id(weather_multiplier, annual_appreciation_pct))")
+    .select(
+      "id, current_value, monthly_rent, monthly_maintenance, status, property_id, condition_score, evicting_until, selling_notice_until, " +
+      "properties:property_id(city_id, bedrooms, demand_tier, cities:city_id(weather_multiplier, annual_appreciation_pct))"
+    )
     .eq("player_id", userId);
+
+  // Active tenants & renter types
+  const { data: tenants } = await (supabase as any)
+    .from("tenants")
+    .select("*, renter_type:renter_type_key(*)")
+    .eq("player_id", userId);
+  const tenantByPP = new Map<string, any>();
+  (tenants ?? []).forEach((t: any) => tenantByPP.set(t.player_property_id, t));
 
   const { data: loans } = await supabase
     .from("loans")
@@ -261,26 +274,168 @@ export async function processDailyTicks(userId: string) {
   let cash = Number(profile.cash);
   let lastSummary: any = null;
   let lastLuck = profile.last_luck_event_date;
+  let peakNW = Number((profile as any).peak_net_worth ?? 0);
+  let redZoneStart: string | null = (profile as any).red_zone_started_at;
+  let gameOver = false;
 
   for (const d of days) {
     let rentTotal = 0, maintTotal = 0, loanTotal = 0;
     const ledgerRows: any[] = [];
 
-    for (const pp of pps ?? []) {
+    for (const pp of (pps as any[]) ?? []) {
       const weather = (pp as any).properties?.cities?.weather_multiplier ?? 1.0;
       const appreciation = (pp as any).properties?.cities?.annual_appreciation_pct ?? 5.0;
-      const isRented = pp.status === "rented";
-      const rent = isRented ? Number(pp.monthly_rent) : 0;
-      const maint = computeMonthlyMaintenance(Number(pp.current_value), Number(weather));
-      rentTotal += rent;
-      maintTotal += maint;
-      if (rent > 0) ledgerRows.push({ player_id: userId, type: "rent", amount: rent, property_id: pp.property_id, description: "Rent collected" });
-      ledgerRows.push({ player_id: userId, type: "maintenance", amount: -maint, property_id: pp.property_id, description: "Monthly maintenance" });
+      const propertyId = pp.property_id;
+      const tenant = tenantByPP.get(pp.id);
+      const ppUpdates: any = {};
 
+      // ----- Sale finalisation (1-month notice) -----
+      if (pp.status === "selling" && pp.selling_notice_until && pp.selling_notice_until <= d) {
+        const value = Number(pp.current_value);
+        const commission = Math.round(value * 0.05);
+        const { data: lns } = await supabase.from("loans").select("balance").eq("player_property_id", pp.id).eq("active", true);
+        const bond = (lns ?? []).reduce((s, l) => s + Number(l.balance), 0);
+        const net = value - commission - bond;
+        await finaliseSale({ userId, playerPropertyId: pp.id, value, commission, bond, net });
+        cash += net; // sale proceeds in this tick
+        continue;
+      }
+
+      // ----- Eviction in progress -----
+      if (pp.status === "evicting" && pp.evicting_until) {
+        const maint = computeMonthlyMaintenance(Number(pp.current_value), Number(weather));
+        maintTotal += maint;
+        ledgerRows.push({ player_id: userId, type: "maintenance", amount: -maint, property_id: propertyId, description: "Monthly maintenance" });
+        if (pp.evicting_until <= d) {
+          ppUpdates.status = "vacant";
+          ppUpdates.evicting_until = null;
+          await (supabase as any).from("tenants").delete().eq("player_property_id", pp.id);
+          tenantByPP.delete(pp.id);
+          ledgerRows.push({ player_id: userId, type: "eviction", amount: 0, property_id: propertyId, description: "Eviction completed — property vacant" });
+          await generateApplicants({ userId, playerPropertyId: pp.id, property: (pp as any).properties as any });
+        }
+      } else if (pp.status === "rented" && tenant) {
+        // ----- Rent collection w/ reliability -----
+        const rt: RenterType = tenant.renter_type;
+        const reliable = Math.random() * 100 < Number(rt.reliability);
+        let rent = 0;
+        if (reliable) {
+          rent = Number(tenant.monthly_rent);
+          rentTotal += rent;
+          ledgerRows.push({ player_id: userId, type: "rent", amount: rent, property_id: propertyId, description: `Rent — ${rt.display_name}` });
+          tenant.consecutive_missed_payments = 0;
+        } else {
+          tenant.consecutive_missed_payments = Number(tenant.consecutive_missed_payments) + 1;
+          tenant.happiness = Math.max(0, Number(tenant.happiness) - 5);
+          ledgerRows.push({ player_id: userId, type: "late_payment", amount: 0, property_id: propertyId, description: `Late payment — ${rt.display_name}` });
+
+          if (tenant.consecutive_missed_payments >= 2) {
+            // Start eviction (2 months)
+            const ev = new Date(d + "T00:00:00");
+            ev.setDate(ev.getDate() + 2);
+            ppUpdates.status = "evicting";
+            ppUpdates.evicting_until = ev.toISOString().slice(0, 10);
+            await (supabase as any).from("tenants").update({ status: "evicting" }).eq("id", tenant.id);
+            ledgerRows.push({ player_id: userId, type: "eviction_notice", amount: 0, property_id: propertyId, description: `Eviction notice issued — ${rt.display_name}` });
+          }
+        }
+
+        // ----- Damage roll -----
+        const dmgPct = DAMAGE_RISK_PCT[rt.damage_risk] ?? 5;
+        if (Math.random() * 100 < dmgPct) {
+          const cost = Math.round(Math.max(2000, Math.min(15000, Number(pp.current_value) * 0.0008)) * (0.6 + Math.random()));
+          maintTotal += cost;
+          ledgerRows.push({ player_id: userId, type: "repair", amount: -cost, property_id: propertyId, description: `Repair — ${rt.display_name}` });
+          ppUpdates.condition_score = Math.max(0, Number(pp.condition_score ?? 100) - 5);
+          tenant.unaddressed = (tenant.unaddressed ?? 0) + 1;
+        }
+
+        // ----- Happiness drift -----
+        if (Number(pp.condition_score ?? 100) < 70) tenant.happiness = Math.max(0, Number(tenant.happiness) - 5);
+        if ((tenant.unaddressed ?? 0) >= 2) tenant.happiness = Math.max(0, Number(tenant.happiness) - 10);
+
+        // ----- Lease expiry -----
+        if (tenant.lease_end <= d && (ppUpdates.status ?? pp.status) === "rented") {
+          // Auto-renew at 5% discount
+          const newRent = Math.round(Number(tenant.monthly_rent) * 0.95);
+          tenant.monthly_rent = newRent;
+          const newEnd = new Date(d + "T00:00:00");
+          newEnd.setDate(newEnd.getDate() + Number(rt.lease_months ?? 12));
+          tenant.lease_start = d;
+          tenant.lease_end = newEnd.toISOString().slice(0, 10);
+          ppUpdates.monthly_rent = newRent;
+          ledgerRows.push({ player_id: userId, type: "lease_renewed", amount: 0, property_id: propertyId, description: `Lease auto-renewed at -5% (${rt.display_name})` });
+        }
+
+        // ----- Tenant leaves on happiness 0 or status 'leaving' -----
+        if (tenant.happiness <= 0 || tenant.status === "leaving") {
+          await (supabase as any).from("tenants").delete().eq("id", tenant.id);
+          tenantByPP.delete(pp.id);
+          ppUpdates.status = "vacant";
+          ledgerRows.push({ player_id: userId, type: "tenant_left", amount: 0, property_id: propertyId, description: `Tenant moved out — ${rt.display_name}` });
+          await generateApplicants({ userId, playerPropertyId: pp.id, property: (pp as any).properties as any });
+        } else {
+          await (supabase as any)
+            .from("tenants")
+            .update({
+              monthly_rent: tenant.monthly_rent,
+              happiness: tenant.happiness,
+              consecutive_missed_payments: tenant.consecutive_missed_payments,
+              lease_start: tenant.lease_start,
+              lease_end: tenant.lease_end,
+            })
+            .eq("id", tenant.id);
+        }
+
+        // ----- Maintenance always -----
+        const maint = computeMonthlyMaintenance(Number(pp.current_value), Number(weather));
+        maintTotal += maint;
+        ledgerRows.push({ player_id: userId, type: "maintenance", amount: -maint, property_id: propertyId, description: "Monthly maintenance" });
+      } else {
+        // Vacant — costs continue, no rent
+        const maint = computeMonthlyMaintenance(Number(pp.current_value), Number(weather));
+        maintTotal += maint;
+        ledgerRows.push({ player_id: userId, type: "maintenance", amount: -maint, property_id: propertyId, description: "Monthly maintenance (vacant)" });
+      }
+
+      // ----- Appreciation -----
       const monthlyAppreciationPct = Number(appreciation) / 100 / 12;
       const newValue = Math.round(Number(pp.current_value) * (1 + monthlyAppreciationPct));
-      await supabase.from("player_properties").update({ current_value: newValue }).eq("id", pp.id);
+      ppUpdates.current_value = newValue;
       pp.current_value = newValue;
+
+      if (Object.keys(ppUpdates).length) {
+        await supabase.from("player_properties").update(ppUpdates).eq("id", pp.id);
+        if (ppUpdates.status) pp.status = ppUpdates.status;
+      }
+    }
+
+    // ----- Demand drift (per property) -----
+    if ((pps ?? []).length) {
+      const month = Number(d.slice(5, 7));
+      const tiers = ["low", "medium", "high", "hot"];
+      const drifts: { id: string; tier: string }[] = [];
+      const propIds = ((pps as any[]) ?? []).map((p: any) => p.property_id);
+      const { data: marketProps } = await supabase
+        .from("properties")
+        .select("id, demand_tier, is_university_suburb, is_coastal")
+        .in("id", propIds as any);
+      for (const mp of (marketProps as any[]) ?? []) {
+        let tier = (mp as any).demand_tier ?? "medium";
+        // Seasonal overrides
+        if ((mp as any).is_university_suburb && (month === 1 || month === 2)) tier = "hot";
+        else if ((mp as any).is_coastal && (month === 11 || month === 12)) tier = "hot";
+        else if (Math.random() < 0.2) {
+          const idx = tiers.indexOf(tier);
+          const dir = Math.random() < 0.5 ? -1 : 1;
+          const next = Math.max(0, Math.min(tiers.length - 1, idx + dir));
+          tier = tiers[next];
+        }
+        if (tier !== (mp as any).demand_tier) drifts.push({ id: (mp as any).id, tier });
+      }
+      for (const drift of drifts) {
+        await supabase.from("properties").update({ demand_tier: drift.tier } as any).eq("id", drift.id);
+      }
     }
 
     // Loan repayments
@@ -308,6 +463,55 @@ export async function processDailyTicks(userId: string) {
     const net = rentTotal - maintTotal - loanTotal - assistantCostMonthly;
     cash += net;
 
+    // ----- Track peak net worth -----
+    {
+      const portfolio = ((pps as any[]) ?? []).reduce((s: number, p: any) => s + Number(p.current_value), 0);
+      const debtBalance = (loans ?? []).reduce((s, l) => s + Number(l.balance), 0);
+      const nw = cash + portfolio - debtBalance;
+      if (nw > peakNW) peakNW = nw;
+    }
+
+    // ----- Red Zone escalation -----
+    if (cash < 0) {
+      if (!redZoneStart) redZoneStart = d;
+      const dayInRed = Math.floor(
+        (new Date(d + "T00:00:00").getTime() - new Date(redZoneStart + "T00:00:00").getTime()) / 86400000
+      ) + 1;
+
+      // Day 1: a random rented tenant leaves immediately
+      if (dayInRed === 1) {
+        const rented = ((pps as any[]) ?? []).filter((p: any) => p.status === "rented");
+        if (rented.length) {
+          const victim = rented[Math.floor(Math.random() * rented.length)];
+          await (supabase as any).from("tenants").delete().eq("player_property_id", victim.id);
+          tenantByPP.delete(victim.id);
+          await supabase.from("player_properties").update({ status: "vacant" }).eq("id", victim.id);
+          victim.status = "vacant";
+          ledgerRows.push({ player_id: userId, type: "vacancy_shock", amount: 0, property_id: victim.property_id, description: "Vacancy shock — tenant left abruptly (Red Zone Day 1)" });
+          await generateApplicants({ userId, playerPropertyId: victim.id, property: (victim as any).properties as any });
+        }
+      }
+      // Day 2: force-sell lowest value at -15%
+      if (dayInRed === 2 && (pps ?? []).length > 0) {
+        const sorted = [...((pps as any[]) ?? [])].sort((a: any, b: any) => Number(a.current_value) - Number(b.current_value));
+        const victim = sorted[0];
+        const value = Math.round(Number(victim.current_value) * 0.85);
+        const commission = Math.round(value * 0.05);
+        const { data: lns } = await supabase.from("loans").select("balance").eq("player_property_id", victim.id).eq("active", true);
+        const bond = (lns ?? []).reduce((s, l) => s + Number(l.balance), 0);
+        const net = value - commission - bond;
+        await finaliseSale({ userId, playerPropertyId: victim.id, value, commission, bond, net });
+        cash += net;
+        ledgerRows.push({ player_id: userId, type: "fire_sale", amount: 0, property_id: victim.property_id, description: "Forced sale at -15% (Red Zone Day 2)" });
+      }
+      // Day 3: GAME OVER
+      if (dayInRed >= 3) {
+        gameOver = true;
+      }
+    } else {
+      redZoneStart = null;
+    }
+
     const tickRow = {
       player_id: userId,
       tick_date: d,
@@ -323,6 +527,8 @@ export async function processDailyTicks(userId: string) {
     if (ledgerRows.length) await supabase.from("ledger").insert(ledgerRows);
     lastSummary = tickRow;
 
+    if (gameOver) break;
+
     // Try to roll a luck event for this day
     await maybeRollLuckEvent(userId, d, lastLuck, (pps ?? []).length > 0);
     // Refresh lastLuck from db cheaply
@@ -330,7 +536,13 @@ export async function processDailyTicks(userId: string) {
     if (pp2) { lastLuck = pp2.last_luck_event_date; cash = Number(pp2.cash); }
   }
 
-  await supabase.from("profiles").update({ cash, last_tick_date: todayStr }).eq("id", userId);
+  await supabase.from("profiles").update({
+    cash,
+    last_tick_date: todayStr,
+    peak_net_worth: peakNW,
+    red_zone_started_at: redZoneStart,
+    game_over: gameOver,
+  } as any).eq("id", userId);
 
   // Re-check achievements (millionaire, debt-free, etc.)
   await checkAchievements(userId);
