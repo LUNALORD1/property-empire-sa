@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { checkAchievements } from "@/lib/achievements";
 import { finaliseSale, generateApplicants, DAMAGE_RISK_PCT, type RenterType } from "@/lib/tenants";
+import { applyDailyMarket } from "@/lib/news";
 
 export const PRIME_RATE = 11.75; // SA prime, %
 
