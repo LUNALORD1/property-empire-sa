@@ -8,7 +8,6 @@ import { bedroomsToAdminPoints, totalAdminCap, type Property } from "@/lib/game"
 import { buyProperty } from "@/lib/buy";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ACHIEVEMENTS_BY_KEY } from "@/lib/achievements";
 
 export const Route = createFileRoute("/_app/")({
   head: () => ({
