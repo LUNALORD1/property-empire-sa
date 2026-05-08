@@ -26,11 +26,11 @@ function LeaderboardPage() {
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Trophy className="w-6 h-6 text-primary" /> Leaderboard
         </h1>
-        {date && (
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Updated {new Date(date + "T00:00:00").toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
-          </span>
-        )}
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          {date
+            ? `Updated ${new Date(date + "T00:00:00").toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}`
+            : "Awaiting first refresh"}
+        </span>
       </div>
 
       <p className="text-xs text-muted-foreground">
@@ -38,12 +38,15 @@ function LeaderboardPage() {
       </p>
 
       {isLoading && <div className="text-sm text-muted-foreground py-10 text-center">Loading rankings…</div>}
-      {!isLoading && rows.length === 0 && (
-        <div className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          The first leaderboard snapshot will appear after the next daily refresh.
+      {!isLoading && rows.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center space-y-2">
+          <Trophy className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+          <div className="text-sm font-semibold">No rankings yet</div>
+          <div className="text-xs text-muted-foreground max-w-xs mx-auto">
+            The leaderboard refreshes every night at 22:00. Buy your first property and check back tomorrow.
+          </div>
         </div>
-      )}
-
+      ) : (
       <div className="rounded-2xl bg-card border border-border overflow-hidden divide-y divide-border">
         {rows.map((r: any) => {
           const isMe = r.player_id === user?.id;
@@ -76,6 +79,7 @@ function LeaderboardPage() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }
