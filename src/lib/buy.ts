@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, PRIME_RATE, type Property } from "@/lib/game";
 import { checkAchievements } from "@/lib/achievements";
+import { generateApplicants } from "@/lib/tenants";
 
 export async function buyProperty(opts: {
   userId: string;
@@ -34,7 +35,7 @@ export async function buyProperty(opts: {
       current_value: price,
       monthly_rent: monthlyRent,
       monthly_maintenance: monthlyMaint,
-      status: "rented",
+      status: "vacant",
     })
     .select("id")
     .single();
@@ -63,6 +64,27 @@ export async function buyProperty(opts: {
       ltv,
     });
   }
+
+  // Generate initial applicant pool for the new vacant property
+  if (pp) {
+    try {
+      await generateApplicants({ userId, playerPropertyId: pp.id, property: property as any });
+    } catch (e) {
+      // Non-fatal — pool will refresh on next monthly tick
+      console.error("Failed to generate initial applicants", e);
+    }
+  }
+
+  // Bump lifetime counter
+  const { data: prof } = await supabase
+    .from("profiles")
+    .select("total_properties_ever")
+    .eq("id", userId)
+    .single();
+  await supabase
+    .from("profiles")
+    .update({ total_properties_ever: Number((prof as any)?.total_properties_ever ?? 0) + 1 } as any)
+    .eq("id", userId);
 
   return await checkAchievements(userId);
 }
