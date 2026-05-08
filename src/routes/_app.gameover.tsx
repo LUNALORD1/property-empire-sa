@@ -40,14 +40,20 @@ function GameOverPage() {
     if (!user?.id || !profile) return;
     let cancelled = false;
     (async () => {
-      // best property ever owned (current value, max across the run)
-      const [{ data: best }, { data: rentRows }, { data: ticks }] = await Promise.all([
+      // best property ever owned (max value from sales OR remaining holdings)
+      const [{ data: bestSold }, { data: ownedNow }, { data: rentRows }, { data: ticks }] = await Promise.all([
         supabase
           .from("ledger")
-          .select("amount, description, property_id, properties:property_id(suburb)")
+          .select("amount, property_id, properties:property_id(suburb)")
           .eq("player_id", user.id)
           .eq("type", "sale")
           .order("amount", { ascending: false })
+          .limit(1),
+        supabase
+          .from("player_properties")
+          .select("current_value, property:property_id(suburb)")
+          .eq("player_id", user.id)
+          .order("current_value", { ascending: false })
           .limit(1),
         supabase.from("ledger").select("amount").eq("player_id", user.id).eq("type", "rent"),
         supabase.from("daily_ticks").select("tick_date").eq("player_id", user.id).order("tick_date", { ascending: true }),
@@ -75,13 +81,16 @@ function GameOverPage() {
         if (!longest || next > longest.days) longest = { days: next, suburb: r.properties?.suburb ?? "—", name };
       }
 
-      const bestRow = (best ?? [])[0] as any;
-      const bestProperty = bestRow
-        ? {
-            suburb: bestRow.properties?.suburb ?? "Unknown suburb",
-            value: Number(bestRow.amount),
-          }
-        : null;
+      const soldRow = (bestSold ?? [])[0] as any;
+      const ownedRow = (ownedNow ?? [])[0] as any;
+      const soldVal = soldRow ? Number(soldRow.amount) : 0;
+      const ownedVal = ownedRow ? Number(ownedRow.current_value) : 0;
+      let bestProperty: { suburb: string; value: number } | null = null;
+      if (ownedVal >= soldVal && ownedRow) {
+        bestProperty = { suburb: ownedRow.property?.suburb ?? "Unknown suburb", value: ownedVal };
+      } else if (soldRow) {
+        bestProperty = { suburb: soldRow.properties?.suburb ?? "Unknown suburb", value: soldVal };
+      }
 
       if (cancelled) return;
       setStats({
