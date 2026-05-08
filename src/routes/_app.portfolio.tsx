@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { useApplicantsCount, usePlayerProperties, useTenants } from "@/lib/data-hooks";
+import { useApplicantsCount, usePlayerProperties, useTenants, useValueHistory } from "@/lib/data-hooks";
 import { formatZAR } from "@/lib/format";
 import {
-  Bed, Bath, Building2, TrendingUp, ArrowRight, UserPlus, Users,
+  Bed, Bath, Building2, TrendingUp, TrendingDown, ArrowRight, UserPlus, Users,
   Heart, Tag, RefreshCw, DoorOpen, Loader2,
 } from "lucide-react";
 import { QuickActions } from "@/components/QuickActions";
@@ -11,6 +11,7 @@ import { useState } from "react";
 import { TenantApplicantsSheet } from "@/components/TenantApplicantsSheet";
 import { SellPropertyDialog } from "@/components/SellPropertyDialog";
 import { PropertyImage } from "@/components/PropertyImage";
+import { Sparkline } from "@/components/Sparkline";
 import { rentMetaFor } from "@/lib/renter-meta";
 import { Button } from "@/components/ui/button";
 import { renewTenant, releaseTenant } from "@/lib/tenants";
@@ -33,6 +34,7 @@ function PortfolioPage() {
   const { data: properties, isLoading } = usePlayerProperties(user?.id);
   const { data: tenants } = useTenants(user?.id);
   const { data: applicantCounts } = useApplicantsCount(user?.id);
+  const { data: history } = useValueHistory(user?.id);
   const qc = useQueryClient();
   const [applicantsFor, setApplicantsFor] = useState<PlayerProperty | null>(null);
   const [sellingFor, setSellingFor] = useState<PlayerProperty | null>(null);
@@ -97,6 +99,11 @@ function PortfolioPage() {
           const estRent = Number(p.monthly_rent);
           const maint = Number(p.monthly_maintenance);
           const cashflow = isPaused ? 0 : actualRent - maint;
+          const hist = history?.[p.id] ?? [];
+          const todayValue = Number(p.current_value);
+          const yesterdayValue = hist.length >= 2 ? hist[hist.length - 2].value : hist[0]?.value ?? todayValue;
+          const todayPct = yesterdayValue > 0 ? ((todayValue - yesterdayValue) / yesterdayValue) * 100 : 0;
+          const sparkValues = hist.length >= 2 ? hist.map((h) => h.value) : [];
           return (
             <div key={p.id} className="rounded-2xl bg-gradient-card border border-border overflow-hidden shadow-card">
               <div className="aspect-[16/9] bg-muted relative">
@@ -111,7 +118,11 @@ function PortfolioPage() {
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Bed className="w-3 h-3" />{p.property?.bedrooms}</span>
                   <span className="flex items-center gap-1"><Bath className="w-3 h-3" />{p.property?.bathrooms}</span>
-                  <span className="ml-auto flex items-center gap-1 text-success"><TrendingUp className="w-3 h-3" />{formatZAR(Number(p.current_value), { compact: true })}</span>
+                  <span className="ml-auto flex items-center gap-2">
+                    <Sparkline values={sparkValues} width={56} height={18} />
+                    <span className="font-semibold text-foreground tabular-nums">{formatZAR(todayValue, { compact: true })}</span>
+                    <PriceChangeChip pct={todayPct} />
+                  </span>
                 </div>
 
                 {tenant && TenantIcon && (
@@ -224,6 +235,23 @@ function HappinessChip({ value }: { value: number }) {
       <Heart className="w-3 h-3" />
       {value}
     </div>
+  );
+}
+
+function PriceChangeChip({ pct }: { pct: number }) {
+  const flat = Math.abs(pct) < 0.05;
+  const up = pct > 0 && !flat;
+  const cls = flat
+    ? "bg-muted/40 text-muted-foreground border-border"
+    : up
+    ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/40"
+    : "bg-red-500/20 text-red-300 border-red-400/40";
+  const Icon = flat ? TrendingUp : up ? TrendingUp : TrendingDown;
+  return (
+    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[10px] font-bold tabular-nums ${cls}`}>
+      <Icon className="w-3 h-3" />
+      {(pct >= 0 ? "+" : "") + pct.toFixed(2)}%
+    </span>
   );
 }
 

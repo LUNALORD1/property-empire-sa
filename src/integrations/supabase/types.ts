@@ -82,9 +82,12 @@ export type Database = {
         Row: {
           annual_appreciation_pct: number
           created_at: string
+          daily_price_modifier: number
           id: string
           latitude: number
           longitude: number
+          modifier_updated_on: string | null
+          momentum_score: number
           name: string
           weather_label: string
           weather_multiplier: number
@@ -92,9 +95,12 @@ export type Database = {
         Insert: {
           annual_appreciation_pct?: number
           created_at?: string
+          daily_price_modifier?: number
           id?: string
           latitude: number
           longitude: number
+          modifier_updated_on?: string | null
+          momentum_score?: number
           name: string
           weather_label?: string
           weather_multiplier?: number
@@ -102,9 +108,12 @@ export type Database = {
         Update: {
           annual_appreciation_pct?: number
           created_at?: string
+          daily_price_modifier?: number
           id?: string
           latitude?: number
           longitude?: number
+          modifier_updated_on?: string | null
+          momentum_score?: number
           name?: string
           weather_label?: string
           weather_multiplier?: number
@@ -352,6 +361,66 @@ export type Database = {
           },
         ]
       }
+      market_news: {
+        Row: {
+          city_id: string | null
+          created_at: string
+          event_key: string
+          headline: string
+          id: string
+          price_modifier: number
+          tick_date: string
+        }
+        Insert: {
+          city_id?: string | null
+          created_at?: string
+          event_key: string
+          headline: string
+          id?: string
+          price_modifier: number
+          tick_date: string
+        }
+        Update: {
+          city_id?: string | null
+          created_at?: string
+          event_key?: string
+          headline?: string
+          id?: string
+          price_modifier?: number
+          tick_date?: string
+        }
+        Relationships: []
+      }
+      news_events: {
+        Row: {
+          city_id: string | null
+          created_at: string
+          event_key: string
+          headline: string
+          id: string
+          price_modifier: number
+          weight: number
+        }
+        Insert: {
+          city_id?: string | null
+          created_at?: string
+          event_key: string
+          headline: string
+          id?: string
+          price_modifier: number
+          weight?: number
+        }
+        Update: {
+          city_id?: string | null
+          created_at?: string
+          event_key?: string
+          headline?: string
+          id?: string
+          price_modifier?: number
+          weight?: number
+        }
+        Relationships: []
+      }
       player_properties: {
         Row: {
           condition_score: number
@@ -536,6 +605,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      property_value_history: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          player_property_id: string
+          recorded_date: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          player_property_id: string
+          recorded_date: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          player_property_id?: string
+          recorded_date?: string
+          value?: number
+        }
+        Relationships: []
       }
       renter_types: {
         Row: {

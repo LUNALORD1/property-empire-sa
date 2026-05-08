@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { checkAchievements } from "@/lib/achievements";
 import { finaliseSale, generateApplicants, DAMAGE_RISK_PCT, type RenterType } from "@/lib/tenants";
+import { applyDailyMarket } from "@/lib/news";
 
 export const PRIME_RATE = 11.75; // SA prime, %
 
@@ -282,6 +283,10 @@ export async function processDailyTicks(userId: string) {
     let rentTotal = 0, maintTotal = 0, loanTotal = 0;
     const ledgerRows: any[] = [];
 
+    // ----- Daily market: roll news, update city modifier + listings -----
+    const { modByCity } = await applyDailyMarket(d);
+    const historyRows: any[] = [];
+
     for (const pp of (pps as any[]) ?? []) {
       const weather = (pp as any).properties?.cities?.weather_multiplier ?? 1.0;
       const appreciation = (pp as any).properties?.cities?.annual_appreciation_pct ?? 5.0;
@@ -398,16 +403,41 @@ export async function processDailyTicks(userId: string) {
         ledgerRows.push({ player_id: userId, type: "maintenance", amount: -maint, property_id: propertyId, description: "Monthly maintenance (vacant)" });
       }
 
-      // ----- Appreciation -----
+      // ----- Appreciation: baseline monthly + today's city market modifier -----
       const monthlyAppreciationPct = Number(appreciation) / 100 / 12;
-      const newValue = Math.round(Number(pp.current_value) * (1 + monthlyAppreciationPct));
+      const cityId = (pp as any).properties?.city_id;
+      const dailyMarketMod = cityId ? (modByCity[cityId] ?? 0) : 0;
+      const newValue = Math.max(
+        50_000,
+        Math.round(Number(pp.current_value) * (1 + monthlyAppreciationPct) * (1 + dailyMarketMod)),
+      );
       ppUpdates.current_value = newValue;
       pp.current_value = newValue;
+      historyRows.push({
+        player_property_id: pp.id,
+        player_id: userId,
+        recorded_date: d,
+        value: newValue,
+      });
 
       if (Object.keys(ppUpdates).length) {
         await supabase.from("player_properties").update(ppUpdates).eq("id", pp.id);
         if (ppUpdates.status) pp.status = ppUpdates.status;
       }
+    }
+
+    // ----- Persist value history (upsert; keep last 7 days only) -----
+    if (historyRows.length) {
+      await (supabase as any)
+        .from("property_value_history")
+        .upsert(historyRows, { onConflict: "player_property_id,recorded_date" });
+      const cutoff = new Date(d + "T00:00:00");
+      cutoff.setDate(cutoff.getDate() - 7);
+      await (supabase as any)
+        .from("property_value_history")
+        .delete()
+        .eq("player_id", userId)
+        .lt("recorded_date", cutoff.toISOString().slice(0, 10));
     }
 
     // ----- Demand drift (per property) -----

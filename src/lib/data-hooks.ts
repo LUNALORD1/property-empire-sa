@@ -180,3 +180,46 @@ export function useApplicantsCount(userId: string | undefined) {
     },
   });
 }
+
+export function useMarketNews() {
+  return useQuery({
+    queryKey: ["market_news"],
+    queryFn: async () => {
+      // Last 2 days of news so the ticker is never empty
+      const since = new Date();
+      since.setDate(since.getDate() - 1);
+      const sinceStr = since.toISOString().slice(0, 10);
+      const { data, error } = await (supabase as any)
+        .from("market_news")
+        .select("*")
+        .gte("tick_date", sinceStr)
+        .order("tick_date", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 1000 * 60,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useValueHistory(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["value_history", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("property_value_history")
+        .select("player_property_id, recorded_date, value")
+        .eq("player_id", userId!)
+        .order("recorded_date", { ascending: true });
+      if (error) throw error;
+      const map: Record<string, Array<{ date: string; value: number }>> = {};
+      for (const r of (data ?? []) as any[]) {
+        (map[r.player_property_id] ||= []).push({ date: r.recorded_date, value: Number(r.value) });
+      }
+      return map;
+    },
+    staleTime: 1000 * 30,
+  });
+}
