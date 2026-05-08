@@ -316,7 +316,7 @@ export async function resetPlayer(userId: string) {
   await supabase
     .from("profiles")
     .update({
-      cash: 350000,
+      cash: 500000,
       game_over: false,
       red_zone_started_at: null,
       peak_net_worth: 0,
