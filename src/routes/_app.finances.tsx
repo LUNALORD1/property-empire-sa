@@ -92,6 +92,8 @@ function FinancesPage() {
         </div>
       </div>
 
+      <FinancialHealth income={monthlyIncome} expense={monthlyExpense} cash={cash} />
+
       <div className="rounded-2xl bg-card border border-border p-4">
         <div className="flex items-center gap-2 mb-3">
           <Banknote className="w-4 h-4 text-primary" />
@@ -188,6 +190,40 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
     <div className="rounded-xl bg-background/40 border border-border p-3">
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground flex items-center gap-1">{icon}{label}</div>
       <div className="text-sm font-bold tabular-nums mt-0.5">{value}</div>
+    </div>
+  );
+}
+
+function FinancialHealth({ income, expense, cash }: { income: number; expense: number; cash: number }) {
+  const net = income - expense;
+  const negative = net < 0;
+  const ratio = expense === 0 ? 1 : Math.min(2, income / expense);
+  const pct = Math.min(100, (ratio / 2) * 100);
+  const runway = negative ? Math.max(0, Math.floor(cash / Math.abs(net))) : null;
+  return (
+    <div className={"rounded-2xl border p-4 " + (negative ? "bg-destructive/10 border-destructive/40" : "bg-card border-border")}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-sm font-semibold">Financial health</div>
+        <div className={"text-xs font-bold tabular-nums " + (negative ? "text-destructive" : "text-success")}>
+          {negative ? "−" : "+"}{formatZAR(Math.abs(net))}/mo
+        </div>
+      </div>
+      <div className="h-2 rounded-full bg-muted overflow-hidden">
+        <div
+          className={"h-full transition-all " + (negative ? "bg-destructive" : "bg-success")}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      {negative ? (
+        <div className="mt-3 text-xs text-destructive">
+          <div className="font-semibold">⚠ Cash flow negative — you are burning through savings.</div>
+          <div className="text-[11px] mt-0.5 opacity-90">
+            At this burn rate you have <strong>{runway}</strong> month{runway === 1 ? "" : "s"} of runway. Sell, raise rents, or fill vacancies fast.
+          </div>
+        </div>
+      ) : (
+        <div className="mt-2 text-[11px] text-muted-foreground">Income covers expenses {ratio.toFixed(2)}× over.</div>
+      )}
     </div>
   );
 }

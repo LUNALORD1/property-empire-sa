@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { RedZoneBanner } from "@/components/RedZoneBanner";
 
 export const Route = createFileRoute("/_app")({
   component: AppShell,
@@ -33,6 +34,12 @@ function AppShell() {
   useEffect(() => {
     if (!loading && !user) nav({ to: "/login" });
   }, [user, loading, nav]);
+
+  // Game-over guard: route into the dramatic Game Over screen.
+  useEffect(() => {
+    if (!profile) return;
+    if ((profile as any).game_over) nav({ to: "/gameover" });
+  }, [profile, nav]);
 
   // Process daily ticks once when profile loads
   useEffect(() => {
@@ -100,6 +107,10 @@ function AppShell() {
         displayName={profile?.display_name}
         lastLuckDate={profile?.last_luck_event_date ?? null}
         ownsAny={(owned?.length ?? 0) > 0}
+      />
+      <RedZoneBanner
+        cash={Number(profile?.cash ?? 0)}
+        redZoneStartedAt={(profile as any)?.red_zone_started_at ?? null}
       />
       <NewsTicker />
       <main className="flex-1 overflow-hidden flex flex-col">
