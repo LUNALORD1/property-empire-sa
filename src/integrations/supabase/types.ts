@@ -610,7 +610,15 @@ export type Database = {
           player_property_id?: string
           renter_type_key?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tenant_applicants_renter_type_key_fkey"
+            columns: ["renter_type_key"]
+            isOneToOne: false
+            referencedRelation: "renter_types"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       tenants: {
         Row: {
@@ -652,7 +660,15 @@ export type Database = {
           renter_type_key?: string
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tenants_renter_type_key_fkey"
+            columns: ["renter_type_key"]
+            isOneToOne: false
+            referencedRelation: "renter_types"
+            referencedColumns: ["key"]
+          },
+        ]
       }
     }
     Views: {
