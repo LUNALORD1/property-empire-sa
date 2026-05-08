@@ -160,3 +160,16 @@
     animation: ticker 60s linear infinite;
   }
 }
+
+/* Leaflet hover tooltip — themed to match the dark UI */
+.leaflet-tooltip.pe-tooltip {
+  background: oklch(0.18 0.02 260 / 0.95);
+  color: oklch(0.96 0.01 260);
+  border: 1px solid oklch(0.82 0.14 85 / 0.4);
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  font-family: inherit;
+}
+.leaflet-tooltip.pe-tooltip::before { display: none; }

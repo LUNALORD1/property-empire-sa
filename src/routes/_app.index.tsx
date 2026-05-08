@@ -79,11 +79,12 @@ function MapPage() {
   return (
     <div className="flex-1 relative">
       <div className="absolute inset-0">
-        <MapView properties={markers} ownedMap={ownedMap} onSelect={setSelected} />
+        <MapView properties={markers} ownedMap={ownedMap} onSelect={setSelected} cash={Number(profile?.cash ?? 0)} />
       </div>
       <div className="absolute top-3 left-3 right-3 z-[400] flex justify-center pointer-events-none">
-        <div className="pointer-events-auto rounded-full bg-card/90 backdrop-blur border border-border px-3 py-1.5 text-xs flex gap-3 items-center shadow-card">
-          <Legend color="oklch(0.82 0.14 85)" label="For sale" />
+        <div className="pointer-events-auto rounded-full bg-card/90 backdrop-blur border border-border px-3 py-1.5 text-xs flex gap-3 items-center shadow-card flex-wrap justify-center max-w-[95vw]">
+          <Legend color="oklch(0.82 0.14 85)" label="Affordable" />
+          <Legend color="oklch(0.55 0.04 270)" label="Out of reach" />
           <Legend color="oklch(0.62 0.18 155)" label="Rented" />
           <Legend color="oklch(0.75 0.18 70)" label="Vacant" />
         </div>
