@@ -249,7 +249,12 @@ export async function finaliseSale(opts: {
   // Add cash
   const { data: prof } = await supabase.from("profiles").select("cash").eq("id", userId).single();
   const newCash = Number(prof?.cash ?? 0) + net;
-  await supabase.from("profiles").update({ cash: newCash }).eq("id", userId);
+  const profileUpdate: any = { cash: newCash };
+  // If this sale pulls the player back into the black, clear the Red Zone
+  // counter immediately so the 3-day game-over clock stops without waiting
+  // for the next daily tick.
+  if (newCash >= 0) profileUpdate.red_zone_started_at = null;
+  await supabase.from("profiles").update(profileUpdate).eq("id", userId);
 
   // Ledger entry
   await supabase.from("ledger").insert({
