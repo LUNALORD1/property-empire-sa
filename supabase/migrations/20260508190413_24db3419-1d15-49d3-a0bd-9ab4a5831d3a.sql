@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ALTER COLUMN cash SET DEFAULT 500000;
