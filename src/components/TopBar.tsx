@@ -83,7 +83,3 @@ function useRandomEventCountdown(lastLuckDate: string | null | undefined, ownsAn
   if (m > 0) return `${m}m ${s}s`;
   return `${s}s`;
 }
-      </div>
-    </header>
-  );
-}
