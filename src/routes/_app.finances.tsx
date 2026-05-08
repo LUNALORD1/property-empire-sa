@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useLedger, useLoans, usePlayerProperties, useProfile } from "@/lib/data-hooks";
 import { formatZAR } from "@/lib/format";
-import { netWorth } from "@/lib/game";
+import { netWorth, PRIME_RATE } from "@/lib/game";
 import { TrendingUp, TrendingDown, Wallet, Building2, CreditCard, Sigma, Banknote } from "lucide-react";
 import { useMemo } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -106,7 +106,7 @@ function FinancesPage() {
           <div className="space-y-2">
             <div className="text-xs text-muted-foreground">
               You have no outstanding bonds. Once you own at least one property in cash, you can
-              finance any future purchase with a home loan at prime ({activeLoans[0]?.interest_rate ?? 11.5}%).
+              finance any future purchase with a home loan at prime ({PRIME_RATE}%).
             </div>
             <Link
               to="/market"
