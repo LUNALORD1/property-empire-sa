@@ -70,6 +70,7 @@ function MarketPage() {
         userId: user.id, property: selected,
         cash: Number(profile?.cash ?? 0),
         useBond: opts.useBond, ltv: opts.ltv,
+        adminUsed, adminCap,
       });
       toast.success(`Bought ${selected.suburb}`);
       setSelected(null);
