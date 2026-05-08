@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
 import { Sparkles, Zap, TrendingUp, TrendingDown } from "lucide-react";
 import type { LuckEvent } from "@/lib/game";
+import { Overlay } from "@/components/Overlay";
+import { Z } from "@/lib/z";
 
 export function LuckEventModal({ event, onClose }: { event: LuckEvent; onClose: () => void }) {
   const amount = Number(event.amount);
@@ -10,7 +12,8 @@ export function LuckEventModal({ event, onClose }: { event: LuckEvent; onClose: 
   const positive = kind === "cash" ? amount >= 0 : value >= 0;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 backdrop-blur p-4 animate-fade-in" onClick={onClose}>
+    <Overlay onClose={onClose}>
+    <div className="fixed inset-0 flex items-center justify-center bg-black/75 backdrop-blur p-4 animate-fade-in" style={{ zIndex: Z.modal }} onClick={onClose}>
       <div
         className="relative w-full max-w-sm bg-card border border-primary/40 rounded-3xl shadow-gold overflow-hidden animate-scale-in"
         onClick={(e) => e.stopPropagation()}
@@ -56,5 +59,6 @@ export function LuckEventModal({ event, onClose }: { event: LuckEvent; onClose: 
         </div>
       </div>
     </div>
+    </Overlay>
   );
 }

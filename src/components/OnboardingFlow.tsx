@@ -7,6 +7,7 @@ import { Building2, MapPin, Hand, CalendarClock, ArrowRight, ZoomIn } from "luci
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import skyline from "@/assets/onboarding-skyline.jpg";
+import { Z } from "@/lib/z";
 
 const STEP_KEY = "pe.onboarding.step";
 
@@ -62,7 +63,7 @@ export function OnboardingFlow({
   if (step === 1) {
     return (
       <OverlayPortal>
-      <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-background animate-fade-in" style={{ zIndex: 2147483000 }}>
+      <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-background animate-fade-in" style={{ zIndex: Z.onboardingFull }}>
         <div className="absolute inset-0 overflow-hidden">
           <img src={skyline} alt="" className="w-full h-full object-cover opacity-50" />
           <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
@@ -154,7 +155,7 @@ export function OnboardingFlow({
   if (step === 4) {
     return (
       <OverlayPortal>
-      <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur p-4 animate-fade-in" style={{ zIndex: 2147483000 }}>
+      <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur p-4 animate-fade-in" style={{ zIndex: Z.onboardingFull }}>
         <div className="relative w-full sm:max-w-sm bg-card border border-primary/30 rounded-3xl shadow-gold overflow-hidden animate-scale-in">
           <div className="h-1 w-full bg-gradient-gold" />
           <div className="p-6 text-center">
@@ -187,7 +188,7 @@ function Coachmark({ children, anchor, onSkip }: { children: React.ReactNode; an
   // Non-blocking pointer overlay so users can still tap pins on the map.
   return (
     <OverlayPortal>
-    <div className="fixed inset-0 pointer-events-none animate-fade-in" style={{ zIndex: 2147482999 }}>
+    <div className="fixed inset-0 pointer-events-none animate-fade-in" style={{ zIndex: Z.onboardingCoach }}>
       <div
         className={
           "absolute left-1/2 -translate-x-1/2 w-[min(92vw,22rem)] pointer-events-auto " +

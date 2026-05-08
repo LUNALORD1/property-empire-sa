@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
 import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, PRIME_RATE, type Property } from "@/lib/game";
 import { useEffect, useMemo, useState } from "react";
+import { Overlay } from "@/components/Overlay";
+import { Z } from "@/lib/z";
 
 export type BuyOptions = { useBond: boolean; ltv: number; deposit: number; monthlyPayment: number };
 
@@ -42,7 +44,8 @@ export function PropertyCard({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 animate-fade-in" style={{ zIndex: 2147483600 }} onClick={onClose}>
+    <Overlay onClose={onClose}>
+    <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 animate-fade-in" style={{ zIndex: Z.modal }} onClick={onClose}>
       <div className="w-full sm:max-w-md bg-card border border-border sm:rounded-2xl rounded-t-2xl shadow-card overflow-hidden max-h-[92vh] overflow-y-auto animate-scale-in" onClick={(e) => e.stopPropagation()}>
         <div className="relative aspect-[16/10] bg-muted">
           {property.photo_url && <img src={property.photo_url} alt={property.address} className="w-full h-full object-cover" />}
@@ -157,6 +160,7 @@ export function PropertyCard({
         </div>
       </div>
     </div>
+    </Overlay>
   );
 }
 

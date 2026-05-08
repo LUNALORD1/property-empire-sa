@@ -1,12 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { formatZAR, formatSigned } from "@/lib/format";
 import { Sparkles, TrendingUp, Wrench } from "lucide-react";
+import { Overlay } from "@/components/Overlay";
+import { Z } from "@/lib/z";
 
 export function DailyTickModal({ rent, maintenance, net, onClose }: {
   rent: number; maintenance: number; net: number; onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur p-4" onClick={onClose}>
+    <Overlay onClose={onClose}>
+    <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur p-4" style={{ zIndex: Z.modal }} onClick={onClose}>
       <div className="w-full max-w-sm bg-card border border-primary/30 rounded-2xl shadow-gold overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="bg-gradient-gold p-4 text-center text-primary-foreground">
           <Sparkles className="w-5 h-5 mx-auto mb-1" />
@@ -24,6 +27,7 @@ export function DailyTickModal({ rent, maintenance, net, onClose }: {
         </div>
       </div>
     </div>
+    </Overlay>
   );
 }
 
