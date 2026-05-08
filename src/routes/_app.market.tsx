@@ -6,6 +6,7 @@ import { Bed, Bath, MapPin, TrendingUp } from "lucide-react";
 import { computeMonthlyRent, bedroomsToAdminPoints, totalAdminCap, tierForPrice, TIERS, type Property } from "@/lib/game";
 import { formatZAR } from "@/lib/format";
 import { PropertyCard, type BuyOptions } from "@/components/PropertyCard";
+import { PropertyImage } from "@/components/PropertyImage";
 import { buyProperty } from "@/lib/buy";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -105,7 +106,7 @@ function MarketPage() {
             return (
               <button key={p.id} onClick={() => setSelected(p)} className="text-left rounded-2xl bg-gradient-card border border-border overflow-hidden shadow-card hover:border-primary/40 transition-colors">
                 <div className="aspect-[16/10] bg-muted relative">
-                  {p.photo_url && <img src={p.photo_url} alt={p.address} loading="lazy" className="w-full h-full object-cover" />}
+                  <PropertyImage propertyId={p.id} listingPrice={p.listing_price} alt={p.address} />
                   <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-background/85 text-[10px] font-medium">{cityById[p.city_id]?.name} · {p.suburb}</div>
                   {isOwned
                     ? <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-success/90 text-[10px] font-bold uppercase">Owned</div>
