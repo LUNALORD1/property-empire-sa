@@ -217,6 +217,24 @@
 .pe-pin:hover { transform: translateY(-3px) scale(1.08); }
 .pe-pin:hover .pe-pin-glow { opacity: 0.85; }
 
+/* Status badge in top-right of pin */
+.pe-pin-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 9px;
+  line-height: 16px;
+  text-align: center;
+  color: #fff;
+  font-weight: 700;
+  border: 1.5px solid rgba(15, 20, 35, 0.9);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.45);
+  z-index: 2;
+}
+
 /* Cluster badge */
 .pe-cluster-wrap { background: transparent !important; border: none !important; }
 .pe-cluster {
