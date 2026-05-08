@@ -101,6 +101,8 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
       center={[-29.5, 25]}
       zoom={5.5}
       minZoom={5}
+      maxBounds={[[-38, 10], [-15, 41]]}
+      maxBoundsViscosity={1}
       scrollWheelZoom
       style={{ width: "100%", height: "100%" }}
       zoomControl={false}
