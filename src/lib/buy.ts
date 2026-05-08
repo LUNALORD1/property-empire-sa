@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, PRIME_RATE, type Property } from "@/lib/game";
+import { checkAchievements } from "@/lib/achievements";
 
 export async function buyProperty(opts: {
   userId: string;
@@ -62,4 +63,6 @@ export async function buyProperty(opts: {
       ltv,
     });
   }
+
+  return await checkAchievements(userId);
 }
