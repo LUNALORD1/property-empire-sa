@@ -139,7 +139,7 @@ export function OnboardingFlow({
         <CoachIcon icon={<Hand className="w-5 h-5" />} />
         <CoachTitle>Tap any gold pin to buy</CoachTitle>
         <CoachBody>
-          You start with <b>R500,000</b> in cash. Pick a property anywhere on the map, then tap{" "}
+          You start with <b>R350,000</b> in cash — enough to buy an Entry-tier property outright. Pick a property on the map, then tap{" "}
           <span className="text-primary font-semibold">Buy</span>. Your first one must be cash —
           bonds unlock after that.
           <span className="block mt-2 pt-2 border-t border-border/50 text-foreground/80">
