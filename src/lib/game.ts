@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { checkAchievements } from "@/lib/achievements";
 
 export const PRIME_RATE = 11.75; // SA prime, %
 
@@ -309,6 +310,9 @@ export async function processDailyTicks(userId: string) {
   }
 
   await supabase.from("profiles").update({ cash, last_tick_date: todayStr }).eq("id", userId);
+
+  // Re-check achievements (millionaire, debt-free, etc.)
+  await checkAchievements(userId);
 
   return lastSummary;
 }
