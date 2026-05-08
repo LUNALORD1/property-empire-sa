@@ -51,7 +51,7 @@ export const Route = createFileRoute("/api/public/hooks/leaderboard-refresh")({
             };
           })
           // Only show players that have started (own at least one property OR have done something)
-          .filter((r) => r.properties_count > 0 || r.net_worth !== 500_000)
+          .filter((r) => r.properties_count > 0 || r.net_worth !== 350_000)
           .sort((a, b) => b.net_worth - a.net_worth)
           .slice(0, 20)
           .map((r, i) => ({ ...r, rank: i + 1, snapshot_date: today }));
