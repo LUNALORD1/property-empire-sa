@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { useAssistants, useLoans, useProfile, usePlayerProperties } from "@/lib/data-hooks";
+import { useAchievements, useAssistants, useLoans, useProfile, usePlayerProperties } from "@/lib/data-hooks";
 import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
 import { netWorth, bedroomsToAdminPoints, totalAdminCap } from "@/lib/game";
 import { LogOut, Trophy, Users, Calendar, UserPlus } from "lucide-react";
+import { ACHIEVEMENTS } from "@/lib/achievements";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ function ProfilePage() {
   const { data: properties } = usePlayerProperties(user?.id);
   const { data: assistants } = useAssistants(user?.id);
   const { data: loans } = useLoans(user?.id);
+  const { data: achievements } = useAchievements(user?.id);
   const [hiring, setHiring] = useState(false);
 
   const cash = Number(profile?.cash ?? 0);
@@ -148,8 +150,32 @@ function ProfilePage() {
       </div>
 
       <div className="rounded-2xl bg-card border border-border p-4">
-        <div className="text-sm font-semibold">Achievements</div>
-        <p className="text-xs text-muted-foreground mt-1">Coming soon — unlock badges for milestones.</p>
+        <div className="flex items-baseline justify-between mb-3">
+          <div className="text-sm font-semibold">Achievements</div>
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {(achievements?.length ?? 0)} / {ACHIEVEMENTS.length}
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-2.5">
+          {ACHIEVEMENTS.map((a) => {
+            const unlocked = (achievements ?? []).some((x: any) => x.badge_key === a.key);
+            return (
+              <div
+                key={a.key}
+                title={a.title + " — " + a.description}
+                className={
+                  "rounded-xl p-2.5 text-center transition-all border " +
+                  (unlocked
+                    ? "bg-gradient-card border-primary/40 shadow-gold"
+                    : "bg-muted/30 border-border opacity-50 grayscale")
+                }
+              >
+                <div className="text-2xl leading-none">{a.emoji}</div>
+                <div className="text-[9px] mt-1.5 font-semibold leading-tight line-clamp-2">{a.title}</div>
+              </div>
+            );
+          })}
+        </div>
       </div>
       <Button variant="outline" className="w-full bg-card hover:bg-muted border-border"
         onClick={async () => { await signOut(); nav({ to: "/login" }); }}>
