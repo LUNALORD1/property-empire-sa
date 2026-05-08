@@ -6,6 +6,8 @@ import { netWorth } from "@/lib/game";
 import { TrendingUp, TrendingDown, Wallet, Building2, CreditCard, Sigma, Banknote } from "lucide-react";
 import { useMemo } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { QuickActions } from "@/components/QuickActions";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/finances")({
   head: () => ({
@@ -74,6 +76,8 @@ function FinancesPage() {
         </div>
       </div>
 
+      <QuickActions />
+
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-card border border-border p-4">
           <div className="text-xs uppercase text-muted-foreground tracking-wide flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-success" />Monthly income</div>
@@ -99,9 +103,20 @@ function FinancesPage() {
           )}
         </div>
         {activeLoans.length === 0 ? (
-          <div className="text-xs text-muted-foreground">
-            You have no outstanding bonds. Once you own at least one property, you can finance future
-            purchases with a home loan from the property card.
+          <div className="space-y-2">
+            <div className="text-xs text-muted-foreground">
+              You have no outstanding bonds. Once you own at least one property in cash, you can
+              finance any future purchase with a home loan at prime ({activeLoans[0]?.interest_rate ?? 11.5}%).
+            </div>
+            <Link
+              to="/market"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-gold text-primary-foreground text-xs font-semibold shadow-gold"
+            >
+              <Banknote className="w-3.5 h-3.5" /> Take out a bond
+            </Link>
+            <div className="text-[10px] text-muted-foreground">
+              Open any listing in the Market and switch the financing toggle to <strong>Bond</strong>.
+            </div>
           </div>
         ) : (
           <div className="divide-y divide-border">
