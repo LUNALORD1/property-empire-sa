@@ -74,7 +74,7 @@ function LoginPage() {
           </h1>
           <p className="text-muted-foreground text-lg">
             Buy real listings across Cape Town, Joburg, Pretoria, Durban &amp; PE.
-            Collect rent every day. 1 real day = 1 in-game month.
+            Pick tenants, collect rent, and grow. 1 real day = 1 in-game month.
           </p>
           <div className="grid grid-cols-3 gap-3 pt-4">
             {[
@@ -111,7 +111,7 @@ function LoginPage() {
             <p className="text-sm text-muted-foreground mt-1">
               {mode === "signup"
                 ? "Start with R350,000 and 120+ tiered listings on the market."
-                : "Pick up where you left off — rent's been collecting."}
+                : "Pick up where you left off — your tenants have been busy."}
             </p>
           </div>
 

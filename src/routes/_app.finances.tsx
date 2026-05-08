@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { useLedger, useLoans, usePlayerProperties, useProfile } from "@/lib/data-hooks";
+import { useLedger, useLoans, usePlayerProperties, useProfile, useTenants } from "@/lib/data-hooks";
 import { formatZAR } from "@/lib/format";
 import { netWorth, PRIME_RATE } from "@/lib/game";
 import { TrendingUp, TrendingDown, Wallet, Building2, CreditCard, Sigma, Banknote } from "lucide-react";
@@ -25,6 +25,7 @@ function FinancesPage() {
   const { data: properties } = usePlayerProperties(user?.id);
   const { data: ledger } = useLedger(user?.id);
   const { data: loans } = useLoans(user?.id);
+  const { data: tenants } = useTenants(user?.id);
 
   const cash = Number(profile?.cash ?? 0);
   const portfolio = (properties ?? []).reduce((s, p) => s + Number(p.current_value), 0);
@@ -33,7 +34,11 @@ function FinancesPage() {
   const monthlyLoanPayment = activeLoans.reduce((s, l) => s + Number(l.monthly_payment), 0);
   const nw = netWorth(cash, properties ?? [], debt);
 
-  const monthlyIncome = (properties ?? []).filter((p) => p.status === "rented").reduce((s, p) => s + Number(p.monthly_rent), 0);
+  // Income only counts rent from active confirmed tenants. Vacant / evicting /
+  // selling properties contribute nothing to income.
+  const monthlyIncome = (tenants ?? [])
+    .filter((t: any) => t.status === "active")
+    .reduce((s: number, t: any) => s + Number(t.monthly_rent), 0);
   const monthlyMaint = (properties ?? []).reduce((s, p) => s + Number(p.monthly_maintenance), 0);
   const monthlyExpense = monthlyMaint + monthlyLoanPayment;
 
@@ -218,7 +223,7 @@ function FinancialHealth({ income, expense, cash }: { income: number; expense: n
         <div className="mt-3 text-xs text-destructive">
           <div className="font-semibold">⚠ Cash flow negative — you are burning through savings.</div>
           <div className="text-[11px] mt-0.5 opacity-90">
-            At this burn rate you have <strong>{runway}</strong> month{runway === 1 ? "" : "s"} of runway. Sell, raise rents, or fill vacancies fast.
+            At this burn rate you have <strong>{runway}</strong> month{runway === 1 ? "" : "s"} of runway. Fill vacancies, sell underperformers, or release expensive tenants fast.
           </div>
         </div>
       ) : (

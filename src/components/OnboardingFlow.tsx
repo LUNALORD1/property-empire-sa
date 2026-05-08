@@ -165,9 +165,10 @@ export function OnboardingFlow({
             <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold">You're in business</div>
             <h3 className="text-2xl font-bold mt-1">One real day = one in-game month</h3>
             <p className="text-sm text-muted-foreground mt-2">
-              Every day we'll <b className="text-success">collect rent</b>, deduct{" "}
-              <b className="text-destructive">maintenance</b> and bond repayments, and pop up a
-              summary so you know where your empire stands.
+              Each day you <b className="text-success">collect rent from tenanted properties</b>,
+              pay <b className="text-destructive">maintenance</b> on all properties, and service
+              any bond repayments. Vacant properties cost money — pick a tenant from the
+              applicant pool to start earning.
             </p>
             <Button onClick={finish} disabled={busy} className="w-full mt-5 h-11 bg-gradient-gold text-primary-foreground font-semibold shadow-gold">
               Let's go
