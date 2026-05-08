@@ -78,7 +78,7 @@ function LoginPage() {
           </p>
           <div className="grid grid-cols-3 gap-3 pt-4">
             {[
-              { k: "R500k", v: "Starting cash" },
+              { k: "R350k", v: "Starting cash" },
               { k: "70+", v: "Live listings" },
               { k: "5", v: "SA cities" },
             ].map((s) => (
@@ -110,7 +110,7 @@ function LoginPage() {
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
               {mode === "signup"
-                ? "Start with R500,000 and 70+ properties on the market."
+                ? "Start with R350,000 and 120+ tiered listings on the market."
                 : "Pick up where you left off — rent's been collecting."}
             </p>
           </div>
