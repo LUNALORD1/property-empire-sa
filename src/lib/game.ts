@@ -1,7 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { checkAchievements } from "@/lib/achievements";
-import { finaliseSale, generateApplicants, DAMAGE_RISK_PCT, type RenterType } from "@/lib/tenants";
-import { applyDailyMarket } from "@/lib/news";
+import {
+  finaliseSale,
+  generateApplicants,
+  topUpApplicants,
+  DAMAGE_RISK_PCT,
+  DEMAND_COUNT,
+  type RenterType,
+} from "@/lib/tenants";
+import { applyDailyMarket, getEffectiveRateModifier } from "@/lib/news";
 
 export const PRIME_RATE = 11.75; // SA prime, %
 
@@ -133,14 +140,26 @@ const LUCK_POOL: Array<{
   weight: number; effect: { kind: "cash" | "value_pct" | "rent_boost"; min: number; max: number };
   good: boolean;
 }> = [
-  { key: "great_tenant", title: "Great tenant!", description: "A model tenant pays 2 months upfront.", weight: 12, good: true, effect: { kind: "cash", min: 8000, max: 22000 } },
-  { key: "lottery_dividend", title: "Surprise dividend", description: "An old investment paid out.", weight: 6, good: true, effect: { kind: "cash", min: 4000, max: 15000 } },
-  { key: "neighbourhood_boom", title: "Neighbourhood boom", description: "A new mall lifted suburb prices.", weight: 8, good: true, effect: { kind: "value_pct", min: 1, max: 3 } },
-  { key: "rent_hike", title: "Rent hike approved", description: "CPI adjustment lifted your rents.", weight: 8, good: true, effect: { kind: "rent_boost", min: 1, max: 2 } },
-  { key: "burst_pipe", title: "Burst pipe", description: "An emergency plumber was called.", weight: 12, good: false, effect: { kind: "cash", min: -8000, max: -2500 } },
-  { key: "loadshedding", title: "Stage 6 load-shedding", description: "Tenants demanded a partial rebate.", weight: 10, good: false, effect: { kind: "cash", min: -6000, max: -1500 } },
-  { key: "geyser", title: "Geyser failure", description: "A geyser had to be replaced.", weight: 8, good: false, effect: { kind: "cash", min: -12000, max: -5000 } },
-  { key: "market_dip", title: "Market dip", description: "A rate-hike rumour cooled the market.", weight: 6, good: false, effect: { kind: "value_pct", min: -2, max: -0.5 } },
+  // Positive personal events (~60% weight)
+  { key: "work_bonus",       title: "Unexpected work bonus",      description: "Your boss surprised you with a once-off bonus.", weight: 9, good: true, effect: { kind: "cash", min: 8000, max: 8000 } },
+  { key: "inheritance",      title: "Small inheritance",          description: "A relative gifted you some money.",              weight: 5, good: true, effect: { kind: "cash", min: 15000, max: 15000 } },
+  { key: "radio_comp",       title: "Radio competition winner",   description: "You won a local radio competition.",             weight: 6, good: true, effect: { kind: "cash", min: 3000, max: 3000 } },
+  { key: "side_hustle",      title: "Side hustle paid off",       description: "Your side hustle had a great month.",            weight: 7, good: true, effect: { kind: "cash", min: 5000, max: 5000 } },
+  { key: "rates_refund",     title: "Rates bill refund",          description: "You found an error in your favour on your rates bill.", weight: 6, good: true, effect: { kind: "cash", min: 2000, max: 2000 } },
+  { key: "friend_repaid",    title: "Friend repaid an old debt",  description: "A friend you'd written off finally paid you back.", weight: 6, good: true, effect: { kind: "cash", min: 6000, max: 6000 } },
+  { key: "tax_refund",       title: "SARS tax refund",            description: "SARS surprised you with a refund.",              weight: 6, good: true, effect: { kind: "cash", min: 4500, max: 4500 } },
+  { key: "sold_furniture",   title: "Sold old furniture",         description: "You cleared out the garage and made some cash.", weight: 5, good: true, effect: { kind: "cash", min: 1800, max: 1800 } },
+  { key: "small_dividend",   title: "Investment dividend",        description: "Your investment account paid a small dividend.", weight: 5, good: true, effect: { kind: "cash", min: 3200, max: 3200 } },
+  { key: "salary_bump",      title: "Salary increase bonus",      description: "You got a salary increase — once-off bonus.",    weight: 5, good: true, effect: { kind: "cash", min: 7000, max: 7000 } },
+  // Negative personal events (~40% weight)
+  { key: "slip_injury",      title: "Slipped and needed care",    description: "An unfortunate slip needed medical attention.",  weight: 5, good: false, effect: { kind: "cash", min: -4000, max: -4000 } },
+  { key: "car_repairs",      title: "Car repairs",                description: "Your car needed unexpected repairs.",            weight: 6, good: false, effect: { kind: "cash", min: -5000, max: -5000 } },
+  { key: "family_travel",    title: "Family emergency travel",    description: "A family emergency required urgent travel.",     weight: 4, good: false, effect: { kind: "cash", min: -7000, max: -7000 } },
+  { key: "burst_geyser",     title: "Burst geyser at home",       description: "Your primary residence's geyser packed up.",     weight: 5, good: false, effect: { kind: "cash", min: -3500, max: -3500 } },
+  { key: "traffic_fine",     title: "Traffic fine",               description: "A traffic fine arrived in the post.",            weight: 5, good: false, effect: { kind: "cash", min: -1500, max: -1500 } },
+  { key: "laptop_died",      title: "Laptop died",                description: "Your laptop died and needed replacing.",          weight: 4, good: false, effect: { kind: "cash", min: -6000, max: -6000 } },
+  { key: "family_help",      title: "Helped a family member",     description: "A family member needed financial help.",         weight: 5, good: false, effect: { kind: "cash", min: -4000, max: -4000 } },
+  { key: "dental_bill",      title: "Unexpected dental bill",     description: "An unexpected dental bill landed.",              weight: 4, good: false, effect: { kind: "cash", min: -2500, max: -2500 } },
 ];
 
 function pickLuck() {
