@@ -21,6 +21,7 @@ import { Route as AppGameoverRouteImport } from './routes/_app.gameover'
 import { Route as AppFinancesRouteImport } from './routes/_app.finances'
 import { Route as ApiPublicHooksWeatherUpdateRouteImport } from './routes/api/public/hooks/weather-update'
 import { Route as ApiPublicHooksLeaderboardRefreshRouteImport } from './routes/api/public/hooks/leaderboard-refresh'
+import { Route as ApiPublicConfigMapsRouteImport } from './routes/api/public/config/maps'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -83,6 +84,11 @@ const ApiPublicHooksLeaderboardRefreshRoute =
     path: '/api/public/hooks/leaderboard-refresh',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicConfigMapsRoute = ApiPublicConfigMapsRouteImport.update({
+  id: '/api/public/config/maps',
+  path: '/api/public/config/maps',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/portfolio': typeof AppPortfolioRoute
   '/profile': typeof AppProfileRoute
   '/settings': typeof AppSettingsRoute
+  '/api/public/config/maps': typeof ApiPublicConfigMapsRoute
   '/api/public/hooks/leaderboard-refresh': typeof ApiPublicHooksLeaderboardRefreshRoute
   '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AppProfileRoute
   '/settings': typeof AppSettingsRoute
   '/': typeof AppIndexRoute
+  '/api/public/config/maps': typeof ApiPublicConfigMapsRoute
   '/api/public/hooks/leaderboard-refresh': typeof ApiPublicHooksLeaderboardRefreshRoute
   '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/_app/profile': typeof AppProfileRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/': typeof AppIndexRoute
+  '/api/public/config/maps': typeof ApiPublicConfigMapsRoute
   '/api/public/hooks/leaderboard-refresh': typeof ApiPublicHooksLeaderboardRefreshRoute
   '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/profile'
     | '/settings'
+    | '/api/public/config/maps'
     | '/api/public/hooks/leaderboard-refresh'
     | '/api/public/hooks/weather-update'
   fileRoutesByTo: FileRoutesByTo
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/settings'
     | '/'
+    | '/api/public/config/maps'
     | '/api/public/hooks/leaderboard-refresh'
     | '/api/public/hooks/weather-update'
   id:
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/_app/profile'
     | '/_app/settings'
     | '/_app/'
+    | '/api/public/config/maps'
     | '/api/public/hooks/leaderboard-refresh'
     | '/api/public/hooks/weather-update'
   fileRoutesById: FileRoutesById
@@ -171,6 +183,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiPublicConfigMapsRoute: typeof ApiPublicConfigMapsRoute
   ApiPublicHooksLeaderboardRefreshRoute: typeof ApiPublicHooksLeaderboardRefreshRoute
   ApiPublicHooksWeatherUpdateRoute: typeof ApiPublicHooksWeatherUpdateRoute
 }
@@ -261,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksLeaderboardRefreshRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/config/maps': {
+      id: '/api/public/config/maps'
+      path: '/api/public/config/maps'
+      fullPath: '/api/public/config/maps'
+      preLoaderRoute: typeof ApiPublicConfigMapsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -291,6 +311,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiPublicConfigMapsRoute: ApiPublicConfigMapsRoute,
   ApiPublicHooksLeaderboardRefreshRoute: ApiPublicHooksLeaderboardRefreshRoute,
   ApiPublicHooksWeatherUpdateRoute: ApiPublicHooksWeatherUpdateRoute,
 }

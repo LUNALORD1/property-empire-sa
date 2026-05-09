@@ -8,6 +8,7 @@ import { tierForPrice, type City, type Property } from "@/lib/game";
 import { formatZAR } from "@/lib/format";
 import { Wallet } from "lucide-react";
 import { TIERS } from "@/lib/game";
+import { getMapConfig } from "@/lib/map-config";
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -105,6 +106,12 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
 }) {
   const [zoom, setZoom] = useState(5.5);
   const [affordableOnly, setAffordableOnly] = useState(false);
+  const [stadiaKey, setStadiaKey] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    getMapConfig().then((c) => { if (alive) setStadiaKey(c.stadiaKey); });
+    return () => { alive = false; };
+  }, []);
 
   // Pre-build icon cache so identical pins reuse divIcons
   const iconFor = useMemo(() => {
@@ -183,16 +190,11 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
     >
       <ResizeHandler />
       <ZoomTracker onChange={setZoom} />
-      {/* Detailed dark base */}
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> · <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-      />
-      {/* Bright street/labels overlay only at suburb zoom */}
-      {zoom >= 12 && (
+      {/* Stadia Maps — Alidade Smooth Dark: dark theme with terrain, labels, and roads */}
+      {stadiaKey && (
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png"
-          opacity={0.55}
+          attribution='&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+          url={`https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${stadiaKey}`}
         />
       )}
 

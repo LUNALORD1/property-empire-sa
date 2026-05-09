@@ -166,7 +166,7 @@ function PortfolioPage() {
           return (
             <div key={p.id} className="rounded-2xl bg-gradient-card border border-border overflow-hidden shadow-card">
               <div className="aspect-[16/9] bg-muted relative">
-                <PropertyImage propertyId={p.property?.id ?? p.property_id} listingPrice={p.property?.listing_price ?? p.purchase_price} imageUrl={(p.property as any)?.image_url} alt={p.property?.address} />
+                <PropertyImage listingPrice={p.property?.listing_price ?? p.purchase_price} address={p.property?.address} locality={p.property?.suburb} alt={p.property?.address} />
                 <StatusPill status={p.status} applicants={applicants} />
                 {paidOff && (
                   <div title="Bond paid off — owned outright" className="absolute top-2 left-2 w-9 h-9 rounded-full bg-gradient-gold grid place-items-center shadow-gold border border-amber-200/60 animate-pulse">
