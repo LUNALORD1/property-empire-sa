@@ -12,6 +12,32 @@ import { applyDailyMarket, getEffectiveRateModifier } from "@/lib/news";
 
 export const PRIME_RATE = 11.75; // SA prime, %
 
+/** LTV → annual % rate (origination, before preferred-client discount). */
+export function ltvBaseRate(ltv: number): number {
+  if (ltv <= 50) return PRIME_RATE - 0.25;
+  if (ltv <= 70) return PRIME_RATE;
+  if (ltv <= 85) return PRIME_RATE + 0.5;
+  return PRIME_RATE + 1.0;
+}
+
+/** Preferred-client discount in % based on properties owned. */
+export function preferredDiscount(propertyCount: number): number {
+  if (propertyCount >= 10) return 0.5;
+  if (propertyCount >= 5) return 0.25;
+  return 0;
+}
+
+export function preferredTier(propertyCount: number): "premium" | "preferred" | null {
+  if (propertyCount >= 10) return "premium";
+  if (propertyCount >= 5) return "preferred";
+  return null;
+}
+
+/** Final origination rate given LTV and player property count. */
+export function originationRate(ltv: number, propertyCount: number): number {
+  return Math.max(1, ltvBaseRate(ltv) - preferredDiscount(propertyCount));
+}
+
 // ---------- Property tiers ----------
 export type Tier = 1 | 2 | 3 | 4 | 5;
 export const TIERS: Array<{ id: Tier; label: string; short: string; min: number; max: number; color: string }> = [
