@@ -1,20 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { useApplicantsCount, usePlayerProperties, useTenants, useValueHistory } from "@/lib/data-hooks";
+import { useApplicantsCount, useCities, useLoans, useMarketProperties, usePlayerProperties, useTenants, useValueHistory } from "@/lib/data-hooks";
 import { formatZAR } from "@/lib/format";
 import {
   Bed, Bath, Building2, TrendingUp, TrendingDown, ArrowRight, UserPlus, Users,
-  Heart, Tag, RefreshCw, DoorOpen, Loader2,
+  Heart, Tag, RefreshCw, DoorOpen, Loader2, Crown, Wrench, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { QuickActions } from "@/components/QuickActions";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TenantApplicantsSheet } from "@/components/TenantApplicantsSheet";
 import { SellPropertyDialog } from "@/components/SellPropertyDialog";
 import { PropertyImage } from "@/components/PropertyImage";
 import { Sparkline } from "@/components/Sparkline";
 import { rentMetaFor } from "@/lib/renter-meta";
 import { Button } from "@/components/ui/button";
-import { renewTenant, releaseTenant } from "@/lib/tenants";
+import { renewTenant, releaseTenant, renovateProperty } from "@/lib/tenants";
+import { tierForPrice } from "@/lib/game";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { PlayerProperty } from "@/lib/game";
@@ -35,10 +36,59 @@ function PortfolioPage() {
   const { data: tenants } = useTenants(user?.id);
   const { data: applicantCounts } = useApplicantsCount(user?.id);
   const { data: history } = useValueHistory(user?.id);
+  const { data: loans } = useLoans(user?.id);
+  const { data: cities } = useCities();
+  const { data: market } = useMarketProperties();
   const qc = useQueryClient();
   const [applicantsFor, setApplicantsFor] = useState<PlayerProperty | null>(null);
   const [sellingFor, setSellingFor] = useState<PlayerProperty | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [collectionOpen, setCollectionOpen] = useState(false);
+  const seenPaidOffRef = useRef<Set<string> | null>(null);
+
+  // Loan map: was this property ever financed? Is the bond active now?
+  const loansByProp = useMemo(() => {
+    const m: Record<string, { hasAny: boolean; active: boolean }> = {};
+    (loans ?? []).forEach((l: any) => {
+      const cur = (m[l.player_property_id] ||= { hasAny: false, active: false });
+      cur.hasAny = true;
+      if (l.active) cur.active = true;
+    });
+    return m;
+  }, [loans]);
+
+  // Detect newly paid-off bonds and fire a toast once.
+  useEffect(() => {
+    if (!loans || !properties) return;
+    const paidOffNow = new Set<string>();
+    (properties ?? []).forEach((p) => {
+      const li = loansByProp[p.id];
+      if (li?.hasAny && !li.active) paidOffNow.add(p.id);
+    });
+    const STORAGE_KEY = "pe.paidOffSeen";
+    if (seenPaidOffRef.current === null) {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        seenPaidOffRef.current = new Set(raw ? JSON.parse(raw) : []);
+      } catch { seenPaidOffRef.current = new Set(); }
+      // Seed with current paid-off so we don't toast on first load
+      paidOffNow.forEach((id) => seenPaidOffRef.current!.add(id));
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...seenPaidOffRef.current])); } catch {}
+      return;
+    }
+    const fresh: string[] = [];
+    paidOffNow.forEach((id) => { if (!seenPaidOffRef.current!.has(id)) fresh.push(id); });
+    if (fresh.length) {
+      fresh.forEach((id) => {
+        const p = properties.find((x) => x.id === id);
+        if (!p) return;
+        const label = (p as any).nickname || p.property?.suburb || "Your property";
+        toast.success(`👑 Bond paid off — ${label} is yours free and clear.`);
+        seenPaidOffRef.current!.add(id);
+      });
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...seenPaidOffRef.current])); } catch {}
+    }
+  }, [loans, properties, loansByProp]);
 
   const tenantByProp = new Map<string, any>();
   (tenants ?? []).forEach((t: any) => tenantByProp.set(t.player_property_id, t));
@@ -104,17 +154,31 @@ function PortfolioPage() {
           const yesterdayValue = hist.length >= 2 ? hist[hist.length - 2].value : hist[0]?.value ?? todayValue;
           const todayPct = yesterdayValue > 0 ? ((todayValue - yesterdayValue) / yesterdayValue) * 100 : 0;
           const sparkValues = hist.length >= 2 ? hist.map((h) => h.value) : [];
+          const condition = Number((p as any).condition_score ?? 100);
+          const nickname = (p as any).nickname as string | null | undefined;
+          const li = loansByProp[p.id];
+          const paidOff = li?.hasAny && !li.active;
           return (
             <div key={p.id} className="rounded-2xl bg-gradient-card border border-border overflow-hidden shadow-card">
               <div className="aspect-[16/9] bg-muted relative">
                 <PropertyImage propertyId={p.property?.id ?? p.property_id} listingPrice={p.property?.listing_price ?? p.purchase_price} imageUrl={(p.property as any)?.image_url} alt={p.property?.address} />
                 <StatusPill status={p.status} applicants={applicants} />
+                {paidOff && (
+                  <div title="Bond paid off — owned outright" className="absolute top-2 left-2 w-9 h-9 rounded-full bg-gradient-gold grid place-items-center shadow-gold border border-amber-200/60 animate-pulse">
+                    <Crown className="w-5 h-5 text-amber-900" />
+                  </div>
+                )}
               </div>
               <div className="p-3 space-y-2.5">
                 <div>
-                  <div className="text-sm font-semibold leading-tight">{p.property?.suburb}</div>
-                  <div className="text-xs text-muted-foreground truncate">{p.property?.address}</div>
+                  <div className="text-sm font-semibold leading-tight truncate">
+                    {nickname || p.property?.address}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {nickname ? `${p.property?.suburb} · ${p.property?.address}` : p.property?.suburb}
+                  </div>
                 </div>
+                <ConditionBar value={condition} />
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Bed className="w-3 h-3" />{p.property?.bedrooms}</span>
                   <span className="flex items-center gap-1"><Bath className="w-3 h-3" />{p.property?.bathrooms}</span>
@@ -168,16 +232,38 @@ function PortfolioPage() {
                   tenant={tenant}
                   applicants={applicants}
                   busy={busyId === tenant?.id || busyId === p.id}
+                  condition={condition}
                   onFindTenant={() => setApplicantsFor(p)}
                   onRenew={() => tenant && onRenew(tenant.id)}
                   onRelease={() => tenant && onRelease(tenant.id)}
                   onSell={() => setSellingFor(p)}
+                  onRenovate={async () => {
+                    if (!user) return;
+                    setBusyId(p.id);
+                    try {
+                      const res = await renovateProperty({ userId: user.id, playerPropertyId: p.id });
+                      toast.success(`Renovated · −${formatZAR(res.cost)} · condition ${res.newCondition}`);
+                      qc.invalidateQueries({ queryKey: ["player_properties", user.id] });
+                      qc.invalidateQueries({ queryKey: ["profile", user.id] });
+                      qc.invalidateQueries({ queryKey: ["ledger", user.id] });
+                    } catch (e: any) {
+                      toast.error(e.message ?? "Renovation failed");
+                    } finally { setBusyId(null); }
+                  }}
                 />
               </div>
             </div>
           );
         })}
       </div>
+
+      <CityCollection
+        open={collectionOpen}
+        onToggle={() => setCollectionOpen(!collectionOpen)}
+        properties={properties}
+        cities={cities ?? []}
+        market={market ?? []}
+      />
 
       {applicantsFor && user && (
         <TenantApplicantsSheet
@@ -196,6 +282,94 @@ function PortfolioPage() {
           property={sellingFor}
           onClose={() => setSellingFor(null)}
         />
+      )}
+    </div>
+  );
+}
+
+function ConditionBar({ value }: { value: number }) {
+  const tone = value >= 80 ? "bg-success" : value >= 50 ? "bg-amber-400" : "bg-destructive";
+  const label = value >= 80 ? "Excellent" : value >= 50 ? "Worn" : "Poor";
+  return (
+    <div>
+      <div className="flex justify-between text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
+        <span>Condition · {label}</span>
+        <span className="tabular-nums">{value}/100</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+        <div className={"h-full " + tone} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function CityCollection({
+  open, onToggle, properties, cities, market,
+}: {
+  open: boolean; onToggle: () => void;
+  properties: PlayerProperty[];
+  cities: any[];
+  market: any[];
+}) {
+  // Owned counts per city per tier (tier 4 = Prestige, tier 5 = Trophy)
+  const stats = useMemo(() => {
+    const byCity: Record<string, { name: string; ownedTrophy: number; ownedPrestige: number; totalTrophy: number; totalPrestige: number }> = {};
+    cities.forEach((c) => {
+      byCity[c.id] = { name: c.name, ownedTrophy: 0, ownedPrestige: 0, totalTrophy: 0, totalPrestige: 0 };
+    });
+    properties.forEach((p) => {
+      const cityId = (p.property as any)?.city_id;
+      if (!cityId || !byCity[cityId]) return;
+      const tier = tierForPrice(Number(p.purchase_price)).id;
+      if (tier === 5) byCity[cityId].ownedTrophy += 1;
+      if (tier === 4) byCity[cityId].ownedPrestige += 1;
+    });
+    market.forEach((m) => {
+      if (!byCity[m.city_id]) return;
+      const tier = tierForPrice(Number(m.listing_price)).id;
+      if (tier === 5) byCity[m.city_id].totalTrophy += 1;
+      if (tier === 4) byCity[m.city_id].totalPrestige += 1;
+    });
+    // Add owned back into total available so the denominator includes "yours"
+    properties.forEach((p) => {
+      const cityId = (p.property as any)?.city_id;
+      if (!cityId || !byCity[cityId]) return;
+      const tier = tierForPrice(Number(p.purchase_price)).id;
+      if (tier === 5) byCity[cityId].totalTrophy += 1;
+      if (tier === 4) byCity[cityId].totalPrestige += 1;
+    });
+    return Object.values(byCity);
+  }, [properties, cities, market]);
+
+  return (
+    <div className="mt-6 rounded-2xl bg-card border border-border overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition"
+      >
+        <div className="flex items-center gap-2">
+          <Crown className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold">City collection — Trophy & Prestige</span>
+        </div>
+        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </button>
+      {open && (
+        <div className="border-t border-border p-3 space-y-2">
+          {stats.map((s) => (
+            <div key={s.name} className="flex items-center justify-between text-sm">
+              <div className="font-medium">{s.name}</div>
+              <div className="flex gap-3 text-xs tabular-nums">
+                <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-400/30">
+                  Trophy {s.ownedTrophy}/{s.totalTrophy}
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-primary/15 text-primary border border-primary/30">
+                  Prestige {s.ownedPrestige}/{s.totalPrestige}
+                </span>
+              </div>
+            </div>
+          ))}
+          {!stats.length && <div className="text-xs text-muted-foreground">No city data.</div>}
+        </div>
       )}
     </div>
   );
@@ -260,19 +434,23 @@ function PropertyActions({
   tenant,
   applicants,
   busy,
+  condition,
   onFindTenant,
   onRenew,
   onRelease,
   onSell,
+  onRenovate,
 }: {
   property: PlayerProperty;
   tenant: any;
   applicants: number;
   busy: boolean;
+  condition: number;
   onFindTenant: () => void;
   onRenew: () => void;
   onRelease: () => void;
   onSell: () => void;
+  onRenovate: () => void;
 }) {
   const isVacant = property.status === "vacant";
   const isSelling = property.status === "selling";
@@ -322,6 +500,18 @@ function PropertyActions({
       >
         <Tag className="w-3.5 h-3.5" /> Sell
       </Button>
+      {condition < 100 && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onRenovate}
+          disabled={busy}
+          className="h-9 text-xs col-span-2 border-primary/40 text-primary hover:bg-primary/10"
+        >
+          {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wrench className="w-3.5 h-3.5" />}
+          Renovate (+20 condition · 1% of value)
+        </Button>
+      )}
     </div>
   );
 }

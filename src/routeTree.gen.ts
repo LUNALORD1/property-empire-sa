@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppPortfolioRouteImport } from './routes/_app.portfolio'
 import { Route as AppMarketRouteImport } from './routes/_app.market'
@@ -33,6 +34,11 @@ const AppRoute = AppRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProfileRoute = AppProfileRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/market': typeof AppMarketRoute
   '/portfolio': typeof AppPortfolioRoute
   '/profile': typeof AppProfileRoute
+  '/settings': typeof AppSettingsRoute
   '/api/public/hooks/leaderboard-refresh': typeof ApiPublicHooksLeaderboardRefreshRoute
   '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
 }
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/market': typeof AppMarketRoute
   '/portfolio': typeof AppPortfolioRoute
   '/profile': typeof AppProfileRoute
+  '/settings': typeof AppSettingsRoute
   '/': typeof AppIndexRoute
   '/api/public/hooks/leaderboard-refresh': typeof ApiPublicHooksLeaderboardRefreshRoute
   '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/_app/market': typeof AppMarketRoute
   '/_app/portfolio': typeof AppPortfolioRoute
   '/_app/profile': typeof AppProfileRoute
+  '/_app/settings': typeof AppSettingsRoute
   '/_app/': typeof AppIndexRoute
   '/api/public/hooks/leaderboard-refresh': typeof ApiPublicHooksLeaderboardRefreshRoute
   '/api/public/hooks/weather-update': typeof ApiPublicHooksWeatherUpdateRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/market'
     | '/portfolio'
     | '/profile'
+    | '/settings'
     | '/api/public/hooks/leaderboard-refresh'
     | '/api/public/hooks/weather-update'
   fileRoutesByTo: FileRoutesByTo
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/market'
     | '/portfolio'
     | '/profile'
+    | '/settings'
     | '/'
     | '/api/public/hooks/leaderboard-refresh'
     | '/api/public/hooks/weather-update'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/_app/market'
     | '/_app/portfolio'
     | '/_app/profile'
+    | '/_app/settings'
     | '/_app/'
     | '/api/public/hooks/leaderboard-refresh'
     | '/api/public/hooks/weather-update'
@@ -184,6 +196,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/profile': {
@@ -252,6 +271,7 @@ interface AppRouteChildren {
   AppMarketRoute: typeof AppMarketRoute
   AppPortfolioRoute: typeof AppPortfolioRoute
   AppProfileRoute: typeof AppProfileRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -262,6 +282,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMarketRoute: AppMarketRoute,
   AppPortfolioRoute: AppPortfolioRoute,
   AppProfileRoute: AppProfileRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

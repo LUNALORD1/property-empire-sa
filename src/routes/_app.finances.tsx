@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { useLedger, useLoans, usePlayerProperties, useProfile, useTenants } from "@/lib/data-hooks";
+import { useGazetteData, useLedger, useLoans, usePlayerProperties, useProfile, useTenants } from "@/lib/data-hooks";
 import { formatZAR } from "@/lib/format";
 import { netWorth, PRIME_RATE } from "@/lib/game";
-import { TrendingUp, TrendingDown, Wallet, Building2, CreditCard, Sigma, Banknote } from "lucide-react";
+import { AlertTriangle, TrendingUp, TrendingDown, Wallet, Building2, CreditCard, Sigma, Banknote } from "lucide-react";
 import { useMemo } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { QuickActions } from "@/components/QuickActions";
@@ -26,6 +26,7 @@ function FinancesPage() {
   const { data: ledger } = useLedger(user?.id);
   const { data: loans } = useLoans(user?.id);
   const { data: tenants } = useTenants(user?.id);
+  const { data: gazette } = useGazetteData();
 
   const cash = Number(profile?.cash ?? 0);
   const portfolio = (properties ?? []).reduce((s, p) => s + Number(p.current_value), 0);
@@ -41,6 +42,12 @@ function FinancesPage() {
     .reduce((s: number, t: any) => s + Number(t.monthly_rent), 0);
   const monthlyMaint = (properties ?? []).reduce((s, p) => s + Number(p.monthly_maintenance), 0);
   const monthlyExpense = monthlyMaint + monthlyLoanPayment;
+
+  // DTI = monthly loan repayments / monthly rental income
+  const dti = monthlyIncome > 0 ? monthlyLoanPayment / monthlyIncome : (monthlyLoanPayment > 0 ? Infinity : 0);
+  const dtiPct = isFinite(dti) ? dti * 100 : 999;
+  const rateMod = Number(gazette?.rateModifier ?? 0);
+  const monthsLeft = Number(gazette?.rateMonthsLeft ?? 0);
 
   const propertyById = useMemo(
     () => Object.fromEntries((properties ?? []).map((p) => [p.id, p])),
@@ -99,13 +106,18 @@ function FinancesPage() {
 
       <FinancialHealth income={monthlyIncome} expense={monthlyExpense} cash={cash} />
 
+      {activeLoans.length > 0 && (
+        <DTICard dtiPct={dtiPct} payment={monthlyLoanPayment} income={monthlyIncome} />
+      )}
+
       <div className="rounded-2xl bg-card border border-border p-4">
         <div className="flex items-center gap-2 mb-3">
           <Banknote className="w-4 h-4 text-primary" />
           <div className="text-sm font-semibold">Bonds</div>
           {activeLoans.length > 0 && (
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground ml-auto">
-              {activeLoans.length} active · prime {activeLoans[0]?.interest_rate}%
+              {activeLoans.length} active · prime {Number(activeLoans[0]?.interest_rate) + rateMod}%
+              {rateMod !== 0 && <span className="text-accent ml-1">({rateMod >= 0 ? "+" : ""}{rateMod.toFixed(2)} SARB)</span>}
             </div>
           )}
         </div>
@@ -130,6 +142,8 @@ function FinancesPage() {
             {activeLoans.map((l) => {
               const pp = propertyById[l.player_property_id];
               const paidPct = ((Number(l.principal) - Number(l.balance)) / Number(l.principal)) * 100;
+              const baseRate = Number(l.interest_rate);
+              const effectiveRate = baseRate + rateMod;
               return (
                 <div key={l.id} className="py-3 first:pt-0 last:pb-0">
                   <div className="flex items-baseline justify-between mb-1">
@@ -145,6 +159,12 @@ function FinancesPage() {
                   <div className="flex justify-between text-[10px] text-muted-foreground mt-1.5">
                     <span>{formatZAR(Number(l.monthly_payment))}/mo · 20 yr</span>
                     <span>{paidPct.toFixed(1)}% paid off</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] mt-1">
+                    <span className="text-muted-foreground">
+                      Effective rate: <span className={"font-semibold tabular-nums " + (rateMod > 0 ? "text-destructive" : rateMod < 0 ? "text-success" : "text-foreground")}>{effectiveRate.toFixed(2)}%</span>
+                      {rateMod !== 0 && <span className="ml-1 text-accent">({rateMod >= 0 ? "+" : ""}{rateMod.toFixed(2)} SARB · {monthsLeft}mo left)</span>}
+                    </span>
                   </div>
                 </div>
               );
@@ -175,7 +195,7 @@ function FinancesPage() {
           {(ledger ?? []).slice(0, 12).map((e: any) => (
             <div key={e.id} className="py-2 flex items-center justify-between text-sm">
               <div>
-                <div className="font-medium capitalize">{e.type.replace("_", " ")}</div>
+                <div className="font-medium capitalize">{ledgerTypeLabel(e.type)}</div>
                 <div className="text-xs text-muted-foreground truncate">{e.description}</div>
               </div>
               <div className={"tabular-nums font-semibold " + (Number(e.amount) >= 0 ? "text-success" : "text-destructive")}>
@@ -185,6 +205,41 @@ function FinancesPage() {
           ))}
           {!(ledger?.length) && <div className="text-xs text-muted-foreground py-3">No transactions yet — buy a property to start earning.</div>}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ledgerTypeLabel(t: string): string {
+  if (t === "luck") return "Random Event";
+  return t.replace(/_/g, " ");
+}
+
+function DTICard({ dtiPct, payment, income }: { dtiPct: number; payment: number; income: number }) {
+  const red = dtiPct >= 80;
+  const amber = !red && dtiPct >= 60;
+  const tone = red
+    ? "bg-destructive/10 border-destructive/40 text-destructive"
+    : amber
+    ? "bg-amber-500/10 border-amber-400/40 text-amber-300"
+    : "bg-card border-border";
+  const barTone = red ? "bg-destructive" : amber ? "bg-amber-400" : "bg-success";
+  const label = red ? "Critical" : amber ? "Stretched" : "Healthy";
+  return (
+    <div className={"rounded-2xl border p-4 " + tone}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          {(red || amber) && <AlertTriangle className="w-4 h-4" />} Debt-to-income (DTI)
+        </div>
+        <div className="text-sm font-bold tabular-nums">{isFinite(dtiPct) ? dtiPct.toFixed(0) + "%" : "∞"} · {label}</div>
+      </div>
+      <div className="h-2 rounded-full bg-muted overflow-hidden">
+        <div className={"h-full " + barTone} style={{ width: `${Math.min(100, isFinite(dtiPct) ? dtiPct : 100)}%` }} />
+      </div>
+      <div className="text-[11px] mt-2 opacity-90">
+        {formatZAR(payment)}/mo bonds vs {formatZAR(income)}/mo rent.
+        {red && " Risk of default — fill vacancies or sell to clear bonds."}
+        {amber && " Cash flow is tight — avoid taking on more debt."}
       </div>
     </div>
   );

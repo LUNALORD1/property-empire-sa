@@ -11,7 +11,7 @@ export type BuyOptions = { useBond: boolean; ltv: number; deposit: number; month
 
 export function PropertyCard({
   property, cityName, weatherLabel, weatherMultiplier, cash, onClose, onBuy, busy, owned, canFinance,
-  adminUsed, adminCap,
+  adminUsed, adminCap, monthlyIncome = 0, currentMonthlyPayments = 0,
 }: {
   property: Property; cityName?: string; weatherLabel?: string; weatherMultiplier?: number; cash: number;
   onClose: () => void;
@@ -19,6 +19,8 @@ export function PropertyCard({
   busy?: boolean; owned?: boolean;
   canFinance?: boolean;
   adminUsed: number; adminCap: number;
+  monthlyIncome?: number;
+  currentMonthlyPayments?: number;
 }) {
   const rent = computeMonthlyRent(property);
   const maint = computeMonthlyMaintenance(property.listing_price, weatherMultiplier ?? 1);
@@ -38,12 +40,26 @@ export function PropertyCard({
   const upfront = useBond ? deposit : property.listing_price;
   const canAfford = cash >= upfront;
   const wouldExceedCap = adminUsed + property.bedrooms > adminCap;
+  const projectedDTI = monthlyIncome > 0
+    ? ((currentMonthlyPayments + monthlyPayment) / monthlyIncome) * 100
+    : (currentMonthlyPayments + monthlyPayment) > 0 ? 999 : 0;
+  const dtiWillBeRed = useBond && projectedDTI >= 80;
+  const [dtiConfirm, setDtiConfirm] = useState<BuyOptions | null>(null);
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onEsc);
     return () => document.removeEventListener("keydown", onEsc);
   }, [onClose]);
+
+  function handleBuyClick() {
+    const opts: BuyOptions = { useBond, ltv, deposit: useBond ? deposit : property.listing_price, monthlyPayment };
+    if (dtiWillBeRed) {
+      setDtiConfirm(opts);
+      return;
+    }
+    onBuy(opts);
+  }
 
   return (
     <Overlay onClose={onClose}>
@@ -151,7 +167,7 @@ export function PropertyCard({
             <div className="rounded-xl bg-success/15 text-success border border-success/30 p-3 text-sm font-medium text-center">You own this property</div>
           ) : (
             <Button
-              onClick={() => onBuy({ useBond, ltv, deposit: useBond ? deposit : property.listing_price, monthlyPayment })}
+              onClick={handleBuyClick}
               disabled={!canAfford || busy || wouldExceedCap}
               className="w-full bg-gradient-gold hover:opacity-90 text-primary-foreground font-semibold shadow-gold h-12 text-base"
             >
@@ -165,9 +181,51 @@ export function PropertyCard({
                 : `Buy for ${formatZAR(property.listing_price)}`}
             </Button>
           )}
+          {useBond && projectedDTI >= 60 && projectedDTI < 80 && (
+            <div className="text-[11px] text-amber-300 flex items-start gap-1.5">
+              <span>⚠</span>
+              <span>This bond pushes your DTI to <strong>{projectedDTI.toFixed(0)}%</strong> — cash flow will be tight.</span>
+            </div>
+          )}
+          {useBond && dtiWillBeRed && (
+            <div className="text-[11px] text-destructive flex items-start gap-1.5">
+              <span>⚠</span>
+              <span>This bond pushes your DTI to <strong>{isFinite(projectedDTI) ? projectedDTI.toFixed(0) + "%" : "∞"}</strong> — high default risk.</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
+    {dtiConfirm && (
+      <div
+        className="fixed inset-0 grid place-items-center bg-black/80 backdrop-blur p-4 animate-fade-in"
+        style={{ zIndex: Z.modal + 1 }}
+        onClick={() => setDtiConfirm(null)}
+      >
+        <div
+          className="w-full max-w-sm bg-card border border-destructive/40 rounded-2xl shadow-card p-5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-center">
+            <div className="text-4xl mb-2">⚠</div>
+            <h3 className="text-lg font-bold text-destructive">High DTI warning</h3>
+            <p className="text-sm text-muted-foreground mt-2">
+              This bond pushes your debt-to-income ratio to <strong>{isFinite(projectedDTI) ? projectedDTI.toFixed(0) + "%" : "∞"}</strong>.
+              Above 80% you risk being unable to cover bond payments and entering the Red Zone.
+            </p>
+            <div className="grid grid-cols-2 gap-2 mt-5">
+              <Button variant="outline" onClick={() => setDtiConfirm(null)}>Cancel</Button>
+              <Button
+                onClick={() => { const o = dtiConfirm; setDtiConfirm(null); onBuy(o); }}
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-semibold"
+              >
+                Buy anyway
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     </Overlay>
   );
 }

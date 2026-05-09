@@ -20,7 +20,7 @@ export function TopBar({
   return (
     <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-md border-b border-border">
       <div className="flex items-center justify-between px-4 py-2.5 max-w-3xl mx-auto">
-        <Link to="/profile" className="flex items-center gap-2.5 group">
+        <Link to="/settings" className="flex items-center gap-2.5 group" title="Settings">
           <div className="w-8 h-8 rounded-lg bg-gradient-gold grid place-items-center shadow-gold">
             <Building2 className="w-4 h-4 text-primary-foreground" />
           </div>
