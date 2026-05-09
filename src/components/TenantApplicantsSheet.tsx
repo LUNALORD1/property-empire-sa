@@ -5,7 +5,7 @@ import { Overlay } from "@/components/Overlay";
 import { Z } from "@/lib/z";
 import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
-import { acceptApplicant, declineApplicant, type RenterType, type TenantApplicant } from "@/lib/tenants";
+import { acceptApplicant, declineApplicant, postTenantAd, AD_COST, type RenterType, type TenantApplicant } from "@/lib/tenants";
 import { RENTER_META, DAMAGE_RISK_META, rentMetaFor } from "@/lib/renter-meta";
 import {
   X,
@@ -18,6 +18,7 @@ import {
   ChevronRight,
   UserPlus,
   Loader2,
+  Megaphone,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -46,6 +47,42 @@ export function TenantApplicantsSheet({
       return data as Row[];
     },
   });
+
+  // Read property meta to know if an ad was already posted this month + cash
+  const { data: ppMeta, refetch: refetchMeta } = useQuery({
+    queryKey: ["pp_ad_meta", playerPropertyId, userId],
+    queryFn: async () => {
+      const [{ data: pp }, { data: prof }] = await Promise.all([
+        supabase.from("player_properties").select("last_ad_posted_at").eq("id", playerPropertyId).single(),
+        supabase.from("profiles").select("cash").eq("id", userId).single(),
+      ]);
+      return { last: (pp as any)?.last_ad_posted_at as string | null, cash: Number(prof?.cash ?? 0) };
+    },
+  });
+
+  const adPostedRecently = (() => {
+    const last = ppMeta?.last;
+    if (!last) return false;
+    const diff = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
+    return diff < 30;
+  })();
+  const canAfford = (ppMeta?.cash ?? 0) >= AD_COST;
+  const [postingAd, setPostingAd] = useState(false);
+
+  async function onPostAd() {
+    if (postingAd) return;
+    setPostingAd(true);
+    try {
+      await postTenantAd({ userId, playerPropertyId });
+      toast.success("Ad posted", { description: `R${AD_COST.toLocaleString()} spent · 1 new applicant` });
+      await Promise.all([refetch(), refetchMeta()]);
+      qc.invalidateQueries({ queryKey: ["profile", userId] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not post ad");
+    } finally {
+      setPostingAd(false);
+    }
+  }
 
   const applicants = useMemo(() => (data ?? []).filter((a) => a.renter_type), [data]);
   const [index, setIndex] = useState(0);
@@ -116,6 +153,24 @@ export function TenantApplicantsSheet({
               <X className="w-4 h-4" />
             </button>
           </header>
+
+          <div className="px-4 pt-3">
+            <Button
+              variant="outline"
+              disabled={postingAd || adPostedRecently || !canAfford}
+              onClick={onPostAd}
+              className="w-full h-10"
+            >
+              <Megaphone className="w-4 h-4" />
+              {adPostedRecently
+                ? "Ad already posted"
+                : !canAfford
+                ? "Insufficient funds"
+                : postingAd
+                ? "Posting…"
+                : `Post an Ad — R${AD_COST.toLocaleString()}`}
+            </Button>
+          </div>
 
           <div className="flex-1 overflow-y-auto p-4">
             {isLoading ? (
