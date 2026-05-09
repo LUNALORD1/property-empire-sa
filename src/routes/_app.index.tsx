@@ -10,6 +10,9 @@ import { buyProperty } from "@/lib/buy";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AcquisitionCelebration } from "@/components/AcquisitionCelebration";
+import { DailyReportModal } from "@/components/DailyReportModal";
+import { useLuckEvents } from "@/lib/data-hooks";
+import { Clock } from "lucide-react";
 
 export const Route = createFileRoute("/_app/")({
   head: () => ({
@@ -31,9 +34,15 @@ function MapPage() {
   const { data: assistants } = useAssistants(user?.id);
   const { data: loans } = useLoans(user?.id);
   const { data: tenants } = useTenants(user?.id);
+  const { data: luckEvents } = useLuckEvents(user?.id);
   const [selected, setSelected] = useState<Property | null>(null);
   const [busy, setBusy] = useState(false);
   const [celebrate, setCelebrate] = useState<{ property: Property; ppId: string } | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+
+  const lastViewed = (profile as any)?.last_report_viewed as string | null | undefined;
+  const latestEventAt = (luckEvents ?? [])[0]?.created_at as string | undefined;
+  const hasUnread = !!latestEventAt && (!lastViewed || new Date(latestEventAt) > new Date(lastViewed));
 
   const cityById = useMemo(() => Object.fromEntries((cities ?? []).map((c) => [c.id, c])), [cities]);
   const ownedMap = useMemo(() => {
@@ -135,6 +144,20 @@ function MapPage() {
             qc.invalidateQueries({ queryKey: ["player_properties", user.id] });
           }}
         />
+      )}
+      <button
+        type="button"
+        onClick={() => setReportOpen(true)}
+        aria-label="Open Daily Report"
+        className="absolute bottom-24 right-3 sm:bottom-6 sm:right-6 z-[450] w-12 h-12 rounded-full bg-gradient-gold shadow-gold grid place-items-center hover:scale-105 transition-transform animate-pulse-soft"
+      >
+        <Clock className="w-5 h-5 text-primary-foreground" />
+        {hasUnread && (
+          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-300 border-2 border-background shadow-gold" />
+        )}
+      </button>
+      {reportOpen && user && (
+        <DailyReportModal userId={user.id} onClose={() => setReportOpen(false)} />
       )}
     </div>
   );
