@@ -203,6 +203,73 @@ export function useMarketNews() {
   });
 }
 
+/** Today's market news + per-city modifiers + active rate modifier. */
+export function useGazetteData() {
+  return useQuery({
+    queryKey: ["gazette_data"],
+    queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const [{ data: news }, { data: cities }] = await Promise.all([
+        (supabase as any).from("market_news").select("*").eq("tick_date", today).order("created_at", { ascending: true }),
+        supabase.from("cities").select("id, name, daily_price_modifier, momentum_score, weather_label"),
+      ]);
+      // Effective rate modifier (sum of last 30 days)
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
+      const { data: rateRows } = await (supabase as any)
+        .from("market_news")
+        .select("rate_delta, tick_date, event_key")
+        .gte("tick_date", since.toISOString().slice(0, 10))
+        .lte("tick_date", today);
+      const seen = new Set<string>();
+      let rateMod = 0;
+      let oldestRateDate: string | null = null;
+      for (const r of (rateRows ?? []) as any[]) {
+        const k = `${r.tick_date}|${r.event_key}`;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        const d = Number(r.rate_delta ?? 0);
+        if (d !== 0) {
+          rateMod += d;
+          if (!oldestRateDate || r.tick_date < oldestRateDate) oldestRateDate = r.tick_date;
+        }
+      }
+      let monthsLeft = 0;
+      if (oldestRateDate) {
+        const ms = new Date(today + "T00:00:00").getTime() - new Date(oldestRateDate + "T00:00:00").getTime();
+        monthsLeft = Math.max(0, 30 - Math.floor(ms / 86_400_000));
+      }
+      return {
+        date: today,
+        news: news ?? [],
+        cities: cities ?? [],
+        rateModifier: rateMod,
+        rateMonthsLeft: monthsLeft,
+      };
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/** Latest daily tick for the player (used in the Gazette personal panel). */
+export function useLatestTick(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["latest_tick", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("daily_ticks")
+        .select("*")
+        .eq("player_id", userId!)
+        .order("tick_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 1000 * 30,
+  });
+}
+
 export function useValueHistory(userId: string | undefined) {
   return useQuery({
     queryKey: ["value_history", userId],
