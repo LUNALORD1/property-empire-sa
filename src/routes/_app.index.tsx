@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { MapView } from "@/components/MapView";
 import { PropertyCard, type BuyOptions } from "@/components/PropertyCard";
-import { useAssistants, useCities, useMarketProperties, usePlayerProperties, useProfile } from "@/lib/data-hooks";
+import { useAssistants, useCities, useLoans, useMarketProperties, usePlayerProperties, useProfile, useTenants } from "@/lib/data-hooks";
 import { useAuth } from "@/hooks/use-auth";
 import { bedroomsToAdminPoints, totalAdminCap, TIERS, type Property } from "@/lib/game";
 import { TIER_COLORS } from "@/components/MapView";
@@ -29,6 +29,8 @@ function MapPage() {
   const { data: owned } = usePlayerProperties(user?.id);
   const { data: profile } = useProfile(user?.id);
   const { data: assistants } = useAssistants(user?.id);
+  const { data: loans } = useLoans(user?.id);
+  const { data: tenants } = useTenants(user?.id);
   const [selected, setSelected] = useState<Property | null>(null);
   const [busy, setBusy] = useState(false);
   const [celebrate, setCelebrate] = useState<{ property: Property; ppId: string } | null>(null);
@@ -43,6 +45,8 @@ function MapPage() {
   const adminUsed = bedroomsToAdminPoints(owned ?? []);
   const adminCap = totalAdminCap(profile?.admin_points_cap ?? 10, assistants ?? []);
   const canFinance = (owned?.length ?? 0) > 0;
+  const monthlyIncome = (tenants ?? []).filter((t: any) => t.status === "active").reduce((s: number, t: any) => s + Number(t.monthly_rent), 0);
+  const currentMonthlyPayments = (loans ?? []).filter((l: any) => l.active).reduce((s: number, l: any) => s + Number(l.monthly_payment), 0);
 
   const markers = useMemo(() => {
     const list = [...(properties ?? [])];
@@ -112,6 +116,8 @@ function MapPage() {
           cash={Number(profile?.cash ?? 0)} owned={!!ownedMap[selected.id]}
           canFinance={canFinance}
           adminUsed={adminUsed} adminCap={adminCap}
+          monthlyIncome={monthlyIncome}
+          currentMonthlyPayments={currentMonthlyPayments}
           busy={busy} onClose={() => setSelected(null)} onBuy={handleBuy}
         />
       )}
