@@ -69,6 +69,9 @@ function MapPage() {
         ltv: opts.ltv,
         adminUsed,
         adminCap,
+        termMonths: opts.termMonths,
+        insurance: opts.insurance,
+        ownedCount: owned?.length ?? 0,
       });
       if (res.playerPropertyId) {
         setCelebrate({ property: selected, ppId: res.playerPropertyId });
@@ -116,6 +119,7 @@ function MapPage() {
           cash={Number(profile?.cash ?? 0)} owned={!!ownedMap[selected.id]}
           canFinance={canFinance}
           adminUsed={adminUsed} adminCap={adminCap}
+          ownedCount={owned?.length ?? 0}
           monthlyIncome={monthlyIncome}
           currentMonthlyPayments={currentMonthlyPayments}
           busy={busy} onClose={() => setSelected(null)} onBuy={handleBuy}
