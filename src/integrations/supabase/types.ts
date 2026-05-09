@@ -463,6 +463,7 @@ export type Database = {
           current_value: number
           evicting_until: string | null
           id: string
+          last_ad_posted_at: string | null
           monthly_maintenance: number
           monthly_rent: number
           player_id: string
@@ -478,6 +479,7 @@ export type Database = {
           current_value: number
           evicting_until?: string | null
           id?: string
+          last_ad_posted_at?: string | null
           monthly_maintenance: number
           monthly_rent: number
           player_id: string
@@ -493,6 +495,7 @@ export type Database = {
           current_value?: number
           evicting_until?: string | null
           id?: string
+          last_ad_posted_at?: string | null
           monthly_maintenance?: number
           monthly_rent?: number
           player_id?: string
