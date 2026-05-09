@@ -3,7 +3,6 @@ import { Z } from "@/lib/z";
 import { X, Wrench, CloudRain, User, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { computeMonthlyRent } from "@/lib/game";
-import { rentMetaFor } from "@/lib/renter-meta";
 
 type Props = {
   property: any;
@@ -21,7 +20,6 @@ export function PropertyImpactModal({ property, tenant, city, todayPct, onClose 
   const weatherMult = Number(city?.weather_multiplier ?? 1);
   const estMarketRent = property.property ? computeMonthlyRent(property.property) : Number(property.monthly_rent);
   const actualRent = tenant ? Number(tenant.monthly_rent) : 0;
-  const meta = tenant ? rentMetaFor(tenant.renter_type_key) : null;
   const rentVsMarket = estMarketRent > 0 ? ((actualRent - estMarketRent) / estMarketRent) * 100 : 0;
 
   const todayUp = todayPct > 0;
