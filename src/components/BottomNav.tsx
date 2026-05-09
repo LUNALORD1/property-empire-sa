@@ -12,10 +12,7 @@ const ITEMS = [
 export function BottomNav() {
   const loc = useLocation();
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-[1000] border-t border-border bg-[oklch(0.18_0.04_260)] shadow-[0_-4px_16px_rgba(0,0,0,0.4)]"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-    >
+    <nav className="fixed bottom-0 left-0 right-0 z-[1000] border-t border-border bg-[oklch(0.18_0.04_260)] shadow-[0_-4px_16px_rgba(0,0,0,0.4)]">
       <div className="grid grid-cols-5 px-1 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] max-w-3xl mx-auto">
         {ITEMS.map(({ to, label, icon: Icon }) => {
           const active = loc.pathname === to;
