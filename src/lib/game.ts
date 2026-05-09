@@ -333,6 +333,7 @@ export async function processDailyTicks(userId: string) {
         if (pp.evicting_until <= d) {
           ppUpdates.status = "vacant";
           ppUpdates.evicting_until = null;
+          ppUpdates.vacancy_started_at = d;
           await (supabase as any).from("tenants").delete().eq("player_property_id", pp.id);
           tenantByPP.delete(pp.id);
           ledgerRows.push({ player_id: userId, type: "eviction", amount: 0, property_id: propertyId, description: "Eviction completed — property vacant" });
@@ -396,6 +397,7 @@ export async function processDailyTicks(userId: string) {
           await (supabase as any).from("tenants").delete().eq("id", tenant.id);
           tenantByPP.delete(pp.id);
           ppUpdates.status = "vacant";
+          ppUpdates.vacancy_started_at = d;
           ledgerRows.push({ player_id: userId, type: "tenant_left", amount: 0, property_id: propertyId, description: `Tenant moved out — ${rt.display_name}` });
           await generateApplicants({ userId, playerPropertyId: pp.id, property: (pp as any).properties as any });
         } else {
@@ -420,6 +422,35 @@ export async function processDailyTicks(userId: string) {
         const maint = computeMonthlyMaintenance(Number(pp.current_value), Number(weather));
         maintTotal += maint;
         ledgerRows.push({ player_id: userId, type: "maintenance", amount: -maint, property_id: propertyId, description: "Monthly maintenance (vacant)" });
+
+        // ----- Daily applicant top-up -----
+        // Vacancy length grows the pool: 1 month = 1 applicant, 2 = 2, 3+ = 3,
+        // capped at the demand-tier maximum. Only top up if the pool is below
+        // its target.
+        const property = (pp as any).properties as any;
+        if (property) {
+          const startedStr = (pp as any).vacancy_started_at ?? d;
+          const startedMs = new Date(startedStr + "T00:00:00").getTime();
+          const todayMs = new Date(d + "T00:00:00").getTime();
+          const monthsVacant = Math.max(0, Math.floor((todayMs - startedMs) / 86_400_000));
+          const tierMax = DEMAND_COUNT[property.demand_tier ?? "medium"] ?? 2;
+          const desired = Math.min(tierMax, Math.max(1, monthsVacant + 1));
+          const { data: cur } = await (supabase as any)
+            .from("tenant_applicants")
+            .select("id")
+            .eq("player_property_id", pp.id);
+          const haveCount = (cur ?? []).length;
+          if (haveCount === 0) {
+            await generateApplicants({
+              userId,
+              playerPropertyId: pp.id,
+              property,
+              count: desired,
+            });
+          } else if (haveCount < desired) {
+            await topUpApplicants({ userId, playerPropertyId: pp.id, property });
+          }
+        }
       }
 
       // ----- Appreciation: baseline monthly + today's city market modifier -----
