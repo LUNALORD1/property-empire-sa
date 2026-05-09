@@ -68,7 +68,7 @@ export function PropertyImpactModal({ property, tenant, city, todayPct, onClose 
               label="Tenant rent vs market"
               value={tenant ? formatZAR(actualRent) : "Vacant"}
               hint={tenant
-                ? `${meta?.label ?? tenant.renter_type_key} · ${rentVsMarket >= 0 ? "+" : ""}${rentVsMarket.toFixed(1)}% vs est. ${formatZAR(estMarketRent)}`
+                ? `${prettifyKey(tenant.renter_type_key)} · ${rentVsMarket >= 0 ? "+" : ""}${rentVsMarket.toFixed(1)}% vs est. ${formatZAR(estMarketRent)}`
                 : `Estimated market rent ${formatZAR(estMarketRent)}`}
               tone={!tenant ? "bad" : rentVsMarket >= 0 ? "good" : "neutral"}
             />
