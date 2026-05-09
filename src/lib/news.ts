@@ -19,6 +19,8 @@ export type NewsEvent = {
   city_id: string | null;
   price_modifier: number;
   weight: number;
+  event_type?: string;
+  rate_delta?: number;
 };
 
 export type MarketNews = {
@@ -28,6 +30,8 @@ export type MarketNews = {
   headline: string;
   city_id: string | null;
   price_modifier: number;
+  event_type?: string;
+  rate_delta?: number;
 };
 
 // Deterministic PRNG so every player rolls the same news for a given date
@@ -88,7 +92,7 @@ export async function ensureNewsForDate(date: string): Promise<MarketNews[]> {
 
   const { data: catalog } = await supabase
     .from("news_events" as any)
-    .select("event_key, headline, city_id, price_modifier, weight");
+    .select("event_key, headline, city_id, price_modifier, weight, event_type, rate_delta");
   const all = ((catalog ?? []) as any[]) as NewsEvent[];
   if (!all.length) return [];
 
@@ -103,11 +107,59 @@ export async function ensureNewsForDate(date: string): Promise<MarketNews[]> {
     headline: p.headline,
     city_id: p.city_id,
     price_modifier: p.price_modifier,
+    event_type: p.event_type ?? "price",
+    rate_delta: p.rate_delta ?? 0,
   }));
   // Ignore conflicts if another player just rolled the same day
   await (supabase as any).from("market_news").upsert(rows, { onConflict: "tick_date,event_key", ignoreDuplicates: true });
   const { data: re } = await supabase.from("market_news" as any).select("*").eq("tick_date", date);
   return ((re ?? []) as any) as MarketNews[];
+}
+
+/**
+ * Effective interest-rate modifier for a given date — sum of rate_delta from
+ * news_events that fired in the last 30 in-game days (1 real day = 1 month
+ * in-game, but we use real calendar days for news so 30 days = 30 days).
+ */
+export async function getEffectiveRateModifier(date: string): Promise<number> {
+  const since = new Date(date + "T00:00:00");
+  since.setDate(since.getDate() - 30);
+  const sinceStr = since.toISOString().slice(0, 10);
+  const { data } = await (supabase as any)
+    .from("market_news")
+    .select("rate_delta, tick_date, event_key")
+    .gte("tick_date", sinceStr)
+    .lte("tick_date", date);
+  // Deduplicate by event_key+tick_date in case of races
+  const seen = new Set<string>();
+  let total = 0;
+  for (const r of (data ?? []) as any[]) {
+    const k = `${r.tick_date}|${r.event_key}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    total += Number(r.rate_delta ?? 0);
+  }
+  return total;
+}
+
+/** How many in-game months remain on the current rate modifier. */
+export async function getRateModifierMonthsLeft(date: string): Promise<number> {
+  const since = new Date(date + "T00:00:00");
+  since.setDate(since.getDate() - 30);
+  const sinceStr = since.toISOString().slice(0, 10);
+  const { data } = await (supabase as any)
+    .from("market_news")
+    .select("tick_date, rate_delta")
+    .gt("rate_delta", 0)
+    .gte("tick_date", sinceStr)
+    .lte("tick_date", date)
+    .order("tick_date", { ascending: true });
+  const oldest = (data ?? [])[0];
+  if (!oldest) return 0;
+  const oldestMs = new Date(oldest.tick_date + "T00:00:00").getTime();
+  const todayMs = new Date(date + "T00:00:00").getTime();
+  const daysElapsed = Math.floor((todayMs - oldestMs) / 86_400_000);
+  return Math.max(0, 30 - daysElapsed);
 }
 
 /**
@@ -194,7 +246,8 @@ export async function applyDailyMarket(date: string): Promise<{
       const { data: listings } = await supabase
         .from("properties")
         .select("id, listing_price")
-        .eq("city_id", c.id);
+          .eq("city_id", c.id)
+          .eq("status", "active");
       for (const l of listings ?? []) {
         const nv = Math.max(50_000, Math.round(Number(l.listing_price) * (1 + entry.mod)));
         await supabase.from("properties").update({ listing_price: nv }).eq("id", l.id);
@@ -202,5 +255,148 @@ export async function applyDailyMarket(date: string): Promise<{
     }
   }
 
+  // ----- Daily market rotation: expire old listings, swap in fresh ones -----
+  await rotateMarket(date);
+
   return { events, modByCity };
+}
+
+/**
+ * Daily market rotation. Idempotent per real date via market_refresh_log PK.
+ * - Expires any active listing whose expires_at has passed.
+ * - Removes 5–10 random un-owned active listings (sold to outside buyers).
+ * - Adds 5–10 fresh listings from reserve, distributed proportionally per city.
+ * - Per-city scarcity check (<10 in reserve → only 1–2 added for that city
+ *   and a "shortage" news headline gets logged in market_news).
+ */
+export async function rotateMarket(date: string) {
+  // Idempotency: only one player should cause the rotation per day
+  const { data: existing } = await (supabase as any)
+    .from("market_refresh_log")
+    .select("refresh_date")
+    .eq("refresh_date", date)
+    .maybeSingle();
+  if (existing) return;
+
+  let removed = 0, added = 0, expired = 0;
+
+  // 1. Expire outdated listings → reserve
+  const { data: expiredRows } = await supabase
+    .from("properties")
+    .select("id")
+    .eq("status", "active")
+    .lt("expires_at", date);
+  if ((expiredRows ?? []).length) {
+    await supabase
+      .from("properties")
+      .update({ status: "reserve", expires_at: null } as any)
+      .in("id", (expiredRows as any[]).map((r) => r.id));
+    expired = (expiredRows as any[]).length;
+  }
+
+  // 2. Remove 5–10 unowned active listings (outside buyers bought them)
+  const { data: ownedRows } = await supabase
+    .from("player_properties")
+    .select("property_id");
+  const ownedSet = new Set((ownedRows ?? []).map((r: any) => r.property_id));
+
+  const { data: activeRows } = await supabase
+    .from("properties")
+    .select("id")
+    .eq("status", "active");
+  const removable = (activeRows ?? []).filter((r: any) => !ownedSet.has(r.id));
+  const toRemove = Math.min(removable.length, 5 + Math.floor(Math.random() * 6));
+  if (toRemove > 0) {
+    const shuffled = removable.sort(() => Math.random() - 0.5).slice(0, toRemove);
+    await supabase
+      .from("properties")
+      .update({ status: "reserve", expires_at: null } as any)
+      .in("id", shuffled.map((r: any) => r.id));
+    removed = toRemove;
+  }
+
+  // 3. Add 5–10 fresh listings from reserve, biased per city by reserve count
+  const targetAdds = 5 + Math.floor(Math.random() * 6);
+  // Group reserves by city
+  const { data: reserveRows } = await supabase
+    .from("properties")
+    .select("id, city_id")
+    .eq("status", "reserve");
+  const reserveByCity: Record<string, string[]> = {};
+  for (const r of reserveRows ?? []) {
+    (reserveByCity[(r as any).city_id] ||= []).push((r as any).id);
+  }
+  const cityIds = Object.keys(reserveByCity);
+  const newRows: string[] = [];
+  const shortageHeadlines: any[] = [];
+
+  // Get city names for headlines
+  const { data: cityNames } = await supabase.from("cities").select("id, name");
+  const cityName: Record<string, string> = {};
+  for (const c of cityNames ?? []) cityName[c.id] = c.name;
+
+  for (let i = 0; i < targetAdds && cityIds.length; i++) {
+    const cid = cityIds[Math.floor(Math.random() * cityIds.length)];
+    const pool = reserveByCity[cid];
+    if (!pool || pool.length === 0) continue;
+    const isShortage = pool.length < 10;
+    if (isShortage && Math.random() < 0.5) continue; // throttle to 1-2 from short-reserve cities
+    const idx = Math.floor(Math.random() * pool.length);
+    const id = pool.splice(idx, 1)[0];
+    newRows.push(id);
+    if (isShortage && !shortageHeadlines.find((h) => h.city_id === cid)) {
+      shortageHeadlines.push({
+        tick_date: date,
+        event_key: `shortage_${cid}_${date}`,
+        headline: `Property shortage in ${cityName[cid] ?? "the market"} — limited listings available`,
+        city_id: cid,
+        price_modifier: 0,
+        event_type: "shortage",
+        rate_delta: 0,
+      });
+    }
+  }
+  if (newRows.length) {
+    // assign each a fresh expires_at + listed_at
+    for (const id of newRows) {
+      const days = 7 + Math.floor(Math.random() * 15);
+      const exp = new Date(date + "T00:00:00");
+      exp.setDate(exp.getDate() + days);
+      await supabase.from("properties").update({
+        status: "active",
+        listed_at: new Date().toISOString(),
+        expires_at: exp.toISOString().slice(0, 10),
+      } as any).eq("id", id);
+    }
+    added = newRows.length;
+
+    // Per-city "new listings" headlines
+    const byCity: Record<string, number> = {};
+    const { data: addedCity } = await supabase
+      .from("properties")
+      .select("city_id")
+      .in("id", newRows);
+    for (const r of addedCity ?? []) byCity[(r as any).city_id] = (byCity[(r as any).city_id] ?? 0) + 1;
+    const newHeadlines = Object.entries(byCity).map(([cid, n]) => ({
+      tick_date: date,
+      event_key: `new_listings_${cid}_${date}`,
+      headline: `${n} new listing${n === 1 ? "" : "s"} hit the market in ${cityName[cid] ?? "the market"} today`,
+      city_id: cid,
+      price_modifier: 0,
+      event_type: "new_listings",
+      rate_delta: 0,
+    }));
+    if (newHeadlines.length || shortageHeadlines.length) {
+      await (supabase as any)
+        .from("market_news")
+        .upsert([...newHeadlines, ...shortageHeadlines], { onConflict: "tick_date,event_key", ignoreDuplicates: true });
+    }
+  }
+
+  await (supabase as any).from("market_refresh_log").insert({
+    refresh_date: date,
+    removed,
+    added,
+    expired,
+  });
 }

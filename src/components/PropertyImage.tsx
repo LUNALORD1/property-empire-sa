@@ -6,18 +6,22 @@ import { cn } from "@/lib/utils";
 export function PropertyImage({
   propertyId,
   listingPrice,
+  imageUrl,
   alt,
   className,
   loading = "lazy",
 }: {
   propertyId: string | undefined | null;
   listingPrice: number | undefined | null;
+  imageUrl?: string | null;
   alt?: string;
   className?: string;
   loading?: "lazy" | "eager";
 }) {
   const [errored, setErrored] = useState(false);
-  const src = getPropertyImageUrl(propertyId, listingPrice);
+  // Prefer DB-stored image_url (unique per property), fall back to deterministic
+  // generator for any legacy rows without an image_url set.
+  const src = imageUrl ?? getPropertyImageUrl(propertyId, listingPrice);
 
   if (errored) {
     return (

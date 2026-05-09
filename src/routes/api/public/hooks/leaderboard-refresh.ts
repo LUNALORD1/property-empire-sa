@@ -50,8 +50,8 @@ export const Route = createFileRoute("/api/public/hooks/leaderboard-refresh")({
               net_worth: Number(p.cash) + port.value - debt,
             };
           })
-          // Only show players that have started (own at least one property OR have done something)
-          .filter((r) => r.properties_count > 0 || r.net_worth !== 350_000)
+          // Only show players that have actually purchased property
+          .filter((r) => r.properties_count > 0)
           .sort((a, b) => b.net_worth - a.net_worth)
           .slice(0, 20)
           .map((r, i) => ({ ...r, rank: i + 1, snapshot_date: today }));
