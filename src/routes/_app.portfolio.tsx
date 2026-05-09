@@ -4,12 +4,13 @@ import { useApplicantsCount, useCities, useLoans, useMarketProperties, usePlayer
 import { formatZAR } from "@/lib/format";
 import {
   Bed, Bath, Building2, TrendingUp, TrendingDown, ArrowRight, UserPlus, Users,
-  Heart, Tag, RefreshCw, DoorOpen, Loader2, Crown, Wrench, ChevronDown, ChevronUp,
+  Heart, Tag, RefreshCw, DoorOpen, Loader2, Crown, Wrench, ChevronDown, ChevronUp, Info,
 } from "lucide-react";
 import { QuickActions } from "@/components/QuickActions";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TenantApplicantsSheet } from "@/components/TenantApplicantsSheet";
 import { SellPropertyDialog } from "@/components/SellPropertyDialog";
+import { PropertyImpactModal } from "@/components/PropertyImpactModal";
 import { PropertyImage } from "@/components/PropertyImage";
 import { Sparkline } from "@/components/Sparkline";
 import { rentMetaFor } from "@/lib/renter-meta";
@@ -42,6 +43,7 @@ function PortfolioPage() {
   const qc = useQueryClient();
   const [applicantsFor, setApplicantsFor] = useState<PlayerProperty | null>(null);
   const [sellingFor, setSellingFor] = useState<PlayerProperty | null>(null);
+  const [impactFor, setImpactFor] = useState<PlayerProperty | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const seenPaidOffRef = useRef<Set<string> | null>(null);
@@ -92,6 +94,9 @@ function PortfolioPage() {
 
   const tenantByProp = new Map<string, any>();
   (tenants ?? []).forEach((t: any) => tenantByProp.set(t.player_property_id, t));
+
+  const cityById = new Map<string, any>();
+  (cities ?? []).forEach((c: any) => cityById.set(c.id, c));
 
   async function onRenew(tenantId: string) {
     setBusyId(tenantId);
@@ -168,6 +173,15 @@ function PortfolioPage() {
                     <Crown className="w-5 h-5 text-amber-900" />
                   </div>
                 )}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setImpactFor(p); }}
+                  aria-label="View modifiers"
+                  title="View modifiers affecting this property"
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-background/80 backdrop-blur grid place-items-center hover:bg-background border border-border"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
               </div>
               <div className="p-3 space-y-2.5">
                 <div>
@@ -281,6 +295,20 @@ function PortfolioPage() {
           userId={user.id}
           property={sellingFor}
           onClose={() => setSellingFor(null)}
+        />
+      )}
+      {impactFor && (
+        <PropertyImpactModal
+          property={impactFor}
+          tenant={tenantByProp.get(impactFor.id)}
+          city={cityById.get((impactFor.property as any)?.city_id)}
+          todayPct={(() => {
+            const hist = history?.[impactFor.id] ?? [];
+            const today = Number(impactFor.current_value);
+            const yest = hist.length >= 2 ? hist[hist.length - 2].value : hist[0]?.value ?? today;
+            return yest > 0 ? ((today - yest) / yest) * 100 : 0;
+          })()}
+          onClose={() => setImpactFor(null)}
         />
       )}
     </div>
