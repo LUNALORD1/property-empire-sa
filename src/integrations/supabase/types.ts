@@ -366,28 +366,58 @@ export type Database = {
           city_id: string | null
           created_at: string
           event_key: string
+          event_type: string
           headline: string
           id: string
           price_modifier: number
+          rate_delta: number
           tick_date: string
         }
         Insert: {
           city_id?: string | null
           created_at?: string
           event_key: string
+          event_type?: string
           headline: string
           id?: string
           price_modifier: number
+          rate_delta?: number
           tick_date: string
         }
         Update: {
           city_id?: string | null
           created_at?: string
           event_key?: string
+          event_type?: string
           headline?: string
           id?: string
           price_modifier?: number
+          rate_delta?: number
           tick_date?: string
+        }
+        Relationships: []
+      }
+      market_refresh_log: {
+        Row: {
+          added: number
+          created_at: string
+          expired: number
+          refresh_date: string
+          removed: number
+        }
+        Insert: {
+          added?: number
+          created_at?: string
+          expired?: number
+          refresh_date: string
+          removed?: number
+        }
+        Update: {
+          added?: number
+          created_at?: string
+          expired?: number
+          refresh_date?: string
+          removed?: number
         }
         Relationships: []
       }
@@ -396,27 +426,33 @@ export type Database = {
           city_id: string | null
           created_at: string
           event_key: string
+          event_type: string
           headline: string
           id: string
           price_modifier: number
+          rate_delta: number
           weight: number
         }
         Insert: {
           city_id?: string | null
           created_at?: string
           event_key: string
+          event_type?: string
           headline: string
           id?: string
           price_modifier: number
+          rate_delta?: number
           weight?: number
         }
         Update: {
           city_id?: string | null
           created_at?: string
           event_key?: string
+          event_type?: string
           headline?: string
           id?: string
           price_modifier?: number
+          rate_delta?: number
           weight?: number
         }
         Relationships: []
@@ -435,6 +471,7 @@ export type Database = {
           purchased_at: string
           selling_notice_until: string | null
           status: string
+          vacancy_started_at: string | null
         }
         Insert: {
           condition_score?: number
@@ -449,6 +486,7 @@ export type Database = {
           purchased_at?: string
           selling_notice_until?: string | null
           status?: string
+          vacancy_started_at?: string | null
         }
         Update: {
           condition_score?: number
@@ -463,6 +501,7 @@ export type Database = {
           purchased_at?: string
           selling_notice_until?: string | null
           status?: string
+          vacancy_started_at?: string | null
         }
         Relationships: [
           {
@@ -490,6 +529,7 @@ export type Database = {
           game_over: boolean
           game_started_at: string
           id: string
+          last_gazette_shown: string | null
           last_luck_event_date: string | null
           last_tick_date: string | null
           onboarded: boolean
@@ -506,6 +546,7 @@ export type Database = {
           game_over?: boolean
           game_started_at?: string
           id: string
+          last_gazette_shown?: string | null
           last_luck_event_date?: string | null
           last_tick_date?: string | null
           onboarded?: boolean
@@ -522,6 +563,7 @@ export type Database = {
           game_over?: boolean
           game_started_at?: string
           id?: string
+          last_gazette_shown?: string | null
           last_luck_event_date?: string | null
           last_tick_date?: string | null
           onboarded?: boolean
@@ -540,11 +582,14 @@ export type Database = {
           city_id: string
           created_at: string
           demand_tier: string
+          expires_at: string | null
           external_id: string | null
           id: string
+          image_url: string | null
           is_coastal: boolean
           is_university_suburb: boolean
           latitude: number
+          listed_at: string | null
           listing_price: number
           longitude: number
           photo_url: string | null
@@ -553,6 +598,7 @@ export type Database = {
           suburb: string
           suburb_avg_price: number
           suburb_avg_rent: number
+          tier: number | null
         }
         Insert: {
           address: string
@@ -561,11 +607,14 @@ export type Database = {
           city_id: string
           created_at?: string
           demand_tier?: string
+          expires_at?: string | null
           external_id?: string | null
           id?: string
+          image_url?: string | null
           is_coastal?: boolean
           is_university_suburb?: boolean
           latitude: number
+          listed_at?: string | null
           listing_price: number
           longitude: number
           photo_url?: string | null
@@ -574,6 +623,7 @@ export type Database = {
           suburb: string
           suburb_avg_price: number
           suburb_avg_rent: number
+          tier?: number | null
         }
         Update: {
           address?: string
@@ -582,11 +632,14 @@ export type Database = {
           city_id?: string
           created_at?: string
           demand_tier?: string
+          expires_at?: string | null
           external_id?: string | null
           id?: string
+          image_url?: string | null
           is_coastal?: boolean
           is_university_suburb?: boolean
           latitude?: number
+          listed_at?: string | null
           listing_price?: number
           longitude?: number
           photo_url?: string | null
@@ -595,6 +648,7 @@ export type Database = {
           suburb?: string
           suburb_avg_price?: number
           suburb_avg_rent?: number
+          tier?: number | null
         }
         Relationships: [
           {
