@@ -27,7 +27,7 @@ export function LuckEventModal({ event, onClose }: { event: LuckEvent; onClose: 
             {positive ? <Sparkles className="w-7 h-7" /> : <Zap className="w-7 h-7" />}
           </div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold mb-1">
-            {positive ? "Lucky break" : "Bad luck"}
+            Random Event
           </div>
           <div className="text-2xl font-bold mb-1">{event.title}</div>
           <p className="text-sm text-muted-foreground">{event.description}</p>
