@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { useGazetteData, useLedger, useLoans, usePlayerProperties, useProfile, useTenants } from "@/lib/data-hooks";
+import { useGazetteData, useLedger, useLoans, useLuckEvents, usePlayerProperties, useProfile, useTenants } from "@/lib/data-hooks";
 import { formatZAR } from "@/lib/format";
 import { netWorth, PRIME_RATE } from "@/lib/game";
-import { AlertTriangle, TrendingUp, TrendingDown, Wallet, Building2, CreditCard, Sigma, Banknote, Crown } from "lucide-react";
+import { AlertTriangle, TrendingUp, TrendingDown, Wallet, Building2, CreditCard, Sigma, Banknote, Crown, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { QuickActions } from "@/components/QuickActions";
@@ -29,6 +29,7 @@ function FinancesPage() {
   const { data: loans } = useLoans(user?.id);
   const { data: tenants } = useTenants(user?.id);
   const { data: gazette } = useGazetteData();
+  const { data: luckEvents } = useLuckEvents(user?.id);
 
   const cash = Number(profile?.cash ?? 0);
   const portfolio = (properties ?? []).reduce((s, p) => s + Number(p.current_value), 0);
@@ -192,6 +193,47 @@ function FinancesPage() {
           ))}
           {!(ledger?.length) && <div className="text-xs text-muted-foreground py-3">No transactions yet — buy a property to start earning.</div>}
         </div>
+      </div>
+
+      <div className="rounded-2xl bg-card border border-border p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <div className="text-sm font-semibold">Random Events</div>
+          <span className="ml-auto text-[10px] text-muted-foreground uppercase tracking-wider">Last 10</span>
+        </div>
+        {(!luckEvents || luckEvents.length === 0) ? (
+          <div className="text-xs text-muted-foreground italic py-2">No random events yet — check back tomorrow.</div>
+        ) : (
+          <div className="space-y-2">
+            {luckEvents.slice(0, 10).map((ev: any) => {
+              const amt = Number(ev.amount ?? 0);
+              const positive = amt >= 0;
+              return (
+                <div key={ev.id} className="rounded-xl border border-border bg-background/40 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span className="truncate">{ev.title}</span>
+                      </div>
+                      {ev.description && (
+                        <div className="text-xs text-muted-foreground mt-0.5">{ev.description}</div>
+                      )}
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
+                        {new Date(ev.created_at).toLocaleDateString("en-ZA", { month: "short", day: "numeric", year: "numeric" })}
+                      </div>
+                    </div>
+                    {amt !== 0 && (
+                      <div className={"shrink-0 tabular-nums font-bold text-sm " + (positive ? "text-success" : "text-destructive")}>
+                        {positive ? "+" : "−"}{formatZAR(Math.abs(amt))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
