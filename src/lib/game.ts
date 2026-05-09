@@ -269,7 +269,7 @@ export async function processDailyTicks(userId: string) {
 
   const { data: loans } = await supabase
     .from("loans")
-    .select("id, balance, interest_rate, monthly_payment, term_months")
+    .select("id, balance, interest_rate, monthly_payment, term_months, principal")
     .eq("player_id", userId)
     .eq("active", true);
 
