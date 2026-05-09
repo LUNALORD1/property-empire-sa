@@ -1,10 +1,8 @@
-import { Overlay } from "@/components/Overlay";
-import { Z } from "@/lib/z";
 import { useGazetteData, useLoans, useNewsHistory, useLuckEvents, useCities, usePlayerProperties } from "@/lib/data-hooks";
-import { ArrowDown, ArrowUp, Minus, Clock, X, Sparkles, CloudRain, Percent, Shield, Crown, TrendingUp, BookOpen, Rocket, Layers, Users, Banknote, Sun, LineChart, AlertTriangle, Briefcase, Lightbulb, ChevronDown } from "lucide-react";
+import { ArrowDown, ArrowUp, Minus, Sparkles, CloudRain, Percent, Shield, Crown, TrendingUp, Rocket, Layers, Users, Banknote, Sun, LineChart, AlertTriangle, Briefcase, Lightbulb, ChevronDown } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { preferredTier, preferredDiscount, PRIME_RATE } from "@/lib/game";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -218,28 +216,9 @@ function formatDate(d: string): string {
   return new Date(d + "T00:00:00").toLocaleDateString("en-ZA", { month: "short", day: "numeric" });
 }
 
-function TabButton({ active, onClick, icon, children }: {
-  active: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode;
-}) {
+export function GuideTab() {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={
-        "flex items-center gap-1.5 px-4 py-2 text-xs font-semibold transition-colors border-b-2 -mb-[1px] " +
-        (active
-          ? "text-primary border-primary"
-          : "text-muted-foreground border-transparent hover:text-foreground")
-      }
-    >
-      {icon}{children}
-    </button>
-  );
-}
-
-function GuideTab() {
-  return (
-    <div className="overflow-y-auto p-4 space-y-2.5">
+    <div className="space-y-2.5">
       <p className="text-xs text-muted-foreground italic px-1">
         Tap any section to expand. Everything here describes how the game actually works today.
       </p>
