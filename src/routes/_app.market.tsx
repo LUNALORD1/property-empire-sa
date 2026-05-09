@@ -11,6 +11,7 @@ import { buyProperty } from "@/lib/buy";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ACHIEVEMENTS_BY_KEY } from "@/lib/achievements";
+import { AcquisitionCelebration } from "@/components/AcquisitionCelebration";
 
 export const Route = createFileRoute("/_app/market")({
   head: () => ({
@@ -34,6 +35,7 @@ function MarketPage() {
   const [tier, setTier] = useState<string>("all");
   const [selected, setSelected] = useState<Property | null>(null);
   const [busy, setBusy] = useState(false);
+  const [celebrate, setCelebrate] = useState<{ property: Property; ppId: string } | null>(null);
 
   const cityById = useMemo(() => Object.fromEntries((cities ?? []).map((c) => [c.id, c])), [cities]);
   const ownedMap = useMemo(() => {
@@ -65,13 +67,17 @@ function MarketPage() {
     if (!user || !selected) return;
     setBusy(true);
     try {
-      await buyProperty({
+      const res = await buyProperty({
         userId: user.id, property: selected,
         cash: Number(profile?.cash ?? 0),
         useBond: opts.useBond, ltv: opts.ltv,
         adminUsed, adminCap,
       });
-      toast.success(`Bought ${selected.suburb}`);
+      if (res.playerPropertyId) {
+        setCelebrate({ property: selected, ppId: res.playerPropertyId });
+      } else {
+        toast.success(`Bought ${selected.suburb}`);
+      }
       setSelected(null);
       qc.invalidateQueries({ queryKey: ["profile", user.id] });
       qc.invalidateQueries({ queryKey: ["player_properties", user.id] });
@@ -139,6 +145,17 @@ function MarketPage() {
           cash={Number(profile?.cash ?? 0)} owned={!!ownedMap[selected.id]}
           canFinance={canFinance} adminUsed={adminUsed} adminCap={adminCap}
           busy={busy} onClose={() => setSelected(null)} onBuy={handleBuy} />
+      )}
+      {celebrate && (
+        <AcquisitionCelebration
+          property={celebrate.property}
+          playerPropertyId={celebrate.ppId}
+          ownerName={profile?.display_name ?? "You"}
+          onClose={() => {
+            setCelebrate(null);
+            qc.invalidateQueries({ queryKey: ["player_properties", user!.id] });
+          }}
+        />
       )}
     </div>
   );
