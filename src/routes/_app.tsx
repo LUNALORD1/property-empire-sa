@@ -136,7 +136,7 @@ function AppShell() {
         redZoneStartedAt={(profile as any)?.red_zone_started_at ?? null}
       />
       <NewsTicker />
-      <main className="flex-1 overflow-hidden flex flex-col">
+      <main className="flex-1 overflow-hidden flex flex-col pb-[calc(env(safe-area-inset-bottom)+4rem)]">
         <Outlet />
       </main>
       <BottomNav />
