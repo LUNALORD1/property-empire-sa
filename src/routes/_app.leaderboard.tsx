@@ -1,27 +1,71 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLeaderboard } from "@/lib/data-hooks";
 import { formatZAR } from "@/lib/format";
-import { Trophy, Building2, Crown, Medal } from "lucide-react";
+import { Trophy, Building2, Crown, Medal, Clock, BookOpen } from "lucide-react";
+import { TodayContent, GuideTab } from "@/components/DailyReportModal";
 
 export const Route = createFileRoute("/_app/leaderboard")({
   head: () => ({
     meta: [
-      { title: "Leaderboard — Property Empire SA" },
-      { name: "description", content: "Top 20 SA property empires ranked by net worth." },
+      { title: "Hub — Property Empire SA" },
+      { name: "description", content: "Daily report, guide and leaderboard rankings." },
     ],
   }),
-  component: LeaderboardPage,
+  component: HubPage,
 });
 
-function LeaderboardPage() {
+type Tab = "ranks" | "today" | "guide";
+
+function HubPage() {
+  const { user } = useAuth();
+  const [tab, setTab] = useState<Tab>("ranks");
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
+        <div className="grid grid-cols-3 max-w-3xl mx-auto">
+          <TabBtn active={tab === "ranks"} onClick={() => setTab("ranks")} icon={<Trophy className="w-4 h-4" />}>Ranks</TabBtn>
+          <TabBtn active={tab === "today"} onClick={() => setTab("today")} icon={<Clock className="w-4 h-4" />}>Today</TabBtn>
+          <TabBtn active={tab === "guide"} onClick={() => setTab("guide")} icon={<BookOpen className="w-4 h-4" />}>Guide</TabBtn>
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {tab === "ranks" && <RanksTab />}
+        {tab === "today" && user && <div className="p-4 max-w-3xl mx-auto"><TodayContent userId={user.id} /></div>}
+        {tab === "guide" && <div className="p-4 max-w-3xl mx-auto"><GuideTab /></div>}
+      </div>
+    </div>
+  );
+}
+
+function TabBtn({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        "min-h-[52px] flex items-center justify-center gap-2 text-sm font-bold transition-all " +
+        (active
+          ? "text-primary-foreground bg-gradient-gold shadow-gold"
+          : "text-muted-foreground hover:text-foreground border-b-2 border-transparent")
+      }
+    >
+      {icon}
+      <span>{children}</span>
+    </button>
+  );
+}
+
+function RanksTab() {
   const { user } = useAuth();
   const { data, isLoading } = useLeaderboard();
   const rows = data?.rows ?? [];
   const date = data?.date;
 
   return (
-    <div className="p-4 max-w-3xl mx-auto w-full overflow-y-auto pb-8 space-y-4">
+    <div className="p-4 max-w-3xl mx-auto w-full space-y-4">
       <div className="flex items-baseline justify-between">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Trophy className="w-6 h-6 text-primary" /> Leaderboard
