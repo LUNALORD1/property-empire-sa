@@ -203,6 +203,24 @@ export function useMarketNews() {
   });
 }
 
+/** Last N market news rows for the ticker history modal. */
+export function useNewsHistory(limit = 20) {
+  return useQuery({
+    queryKey: ["market_news_history", limit],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("market_news")
+        .select("*")
+        .order("tick_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 1000 * 60,
+  });
+}
+
 /** Today's market news + per-city modifiers + active rate modifier. */
 export function useGazetteData() {
   return useQuery({
