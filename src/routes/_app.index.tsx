@@ -149,7 +149,7 @@ function MapPage() {
         type="button"
         onClick={() => setReportOpen(true)}
         aria-label="Open Daily Report"
-        className="absolute bottom-24 right-3 sm:bottom-6 sm:right-6 z-[450] w-12 h-12 rounded-full bg-gradient-gold shadow-gold grid place-items-center hover:scale-105 transition-transform animate-pulse-soft"
+        className="absolute bottom-24 right-3 sm:bottom-6 sm:right-6 z-[450] w-12 h-12 rounded-full bg-gradient-gold shadow-gold grid place-items-center hover:scale-105 transition-transform"
       >
         <Clock className="w-5 h-5 text-primary-foreground" />
         {hasUnread && (
