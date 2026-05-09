@@ -6,6 +6,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { tierForPrice, type City, type Property } from "@/lib/game";
 import { formatZAR } from "@/lib/format";
+import { Wallet } from "lucide-react";
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -102,6 +103,7 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
   cities?: City[];
 }) {
   const [zoom, setZoom] = useState(5.5);
+  const [affordableOnly, setAffordableOnly] = useState(false);
 
   // Pre-build icon cache so identical pins reuse divIcons
   const iconFor = useMemo(() => {
@@ -114,7 +116,59 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
     };
   }, []);
 
+  const visibleProps = useMemo(() => {
+    if (!affordableOnly) return properties;
+    return properties.filter((p) => ownedMap[p.id] || cash >= Number(p.listing_price));
+  }, [properties, affordableOnly, cash, ownedMap]);
+
+  const useClusters = zoom < 10;
+
+  const markerNodes = visibleProps.map((p) => {
+    const owned = ownedMap[p.id];
+    const price = Number(p.listing_price);
+    const affordable = cash >= price;
+    const tier = tierForPrice(price);
+    const tierColor = TIER_COLORS[tier.id];
+    const status: PinStatus =
+      owned === "rented" ? "rented"
+      : owned === "vacant" ? "vacant"
+      : !affordable ? "unaffordable"
+      : "available";
+    const icon = iconFor(tierColor, status);
+    const tooltipLabel = owned
+      ? (owned === "rented" ? "Rented · yours" : "Vacant · yours")
+      : (affordable ? `${tier.label} · affordable` : `${tier.label} · out of reach`);
+    return (
+      <Marker key={p.id} position={[p.latitude, p.longitude]} icon={icon}
+        eventHandlers={{ click: () => onSelect(p) }}>
+        <Tooltip direction="top" offset={[0, -36]} opacity={1} sticky className="pe-tooltip">
+          <div style={{ minWidth: 160 }}>
+            <div style={{ fontSize: 11, color: tierColor, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
+              {tooltipLabel}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{formatZAR(price)}</div>
+            <div style={{ fontSize: 11, opacity: 0.75, marginTop: 2 }}>
+              {p.suburb} · {p.bedrooms}bd
+            </div>
+          </div>
+        </Tooltip>
+      </Marker>
+    );
+  });
+
   return (
+    <div className="w-full h-full relative">
+    <div className="absolute top-3 right-3 z-[450] pointer-events-auto">
+      <button
+        onClick={() => setAffordableOnly((v) => !v)}
+        className={"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold border backdrop-blur transition " +
+          (affordableOnly ? "bg-gradient-gold text-primary-foreground border-primary/40 shadow-gold" : "bg-card/80 text-muted-foreground border-border hover:text-foreground")}
+        title="Show only listings you can afford"
+      >
+        <Wallet className="w-3.5 h-3.5" />
+        {affordableOnly ? "Affordable only" : "Show all"}
+      </button>
+    </div>
     <MapContainer
       center={[-29.5, 25]}
       zoom={5.5}
@@ -141,6 +195,20 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
         />
       )}
 
+      {/* Outer warm gold halo — most visible at country zoom */}
+      {zoom < 9 && (cities ?? []).map((c) => (
+        <Circle
+          key={`halo-outer-${c.id}`}
+          center={[c.latitude, c.longitude]}
+          radius={zoom < 7 ? 90000 : 60000}
+          pathOptions={{
+            stroke: false,
+            fillColor: "oklch(0.82 0.16 75)",
+            fillOpacity: 0.10,
+          }}
+          interactive={false}
+        />
+      ))}
       {/* City zone overlays — soft amber glow */}
       {(cities ?? []).map((c) => (
         <Circle
@@ -151,7 +219,7 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
             color: "oklch(0.82 0.14 85 / 0.55)",
             weight: 1.5,
             fillColor: "oklch(0.82 0.14 85)",
-            fillOpacity: zoom < 9 ? 0.10 : 0.04,
+            fillOpacity: zoom < 9 ? 0.18 : 0.04,
             dashArray: zoom >= 11 ? "4 6" : undefined,
           }}
           interactive={false}
@@ -173,54 +241,20 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
         />
       ))}
 
-      <MarkerClusterGroup
-        chunkedLoading
-        showCoverageOnHover={false}
-        spiderfyOnMaxZoom
-        maxClusterRadius={(z: number) => (z < 8 ? 80 : z < 11 ? 50 : 30)}
-        iconCreateFunction={clusterIcon}
-      >
-        {properties.map((p) => {
-          const owned = ownedMap[p.id];
-          const price = Number(p.listing_price);
-          const affordable = cash >= price;
-          const tier = tierForPrice(price);
-          const tierColor = TIER_COLORS[tier.id];
-
-          const status: PinStatus =
-            owned === "rented" ? "rented"
-            : owned === "vacant" ? "vacant"
-            : !affordable ? "unaffordable"
-            : "available";
-
-          const icon = iconFor(tierColor, status);
-
-          const tooltipLabel = owned
-            ? (owned === "rented" ? "Rented · yours" : "Vacant · yours")
-            : (affordable ? `${tier.label} · affordable` : `${tier.label} · out of reach`);
-
-          return (
-            <Marker
-              key={p.id}
-              position={[p.latitude, p.longitude]}
-              icon={icon}
-              eventHandlers={{ click: () => onSelect(p) }}
-            >
-              <Tooltip direction="top" offset={[0, -36]} opacity={1} sticky className="pe-tooltip">
-                <div style={{ minWidth: 160 }}>
-                  <div style={{ fontSize: 11, color: tierColor, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
-                    {tooltipLabel}
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{formatZAR(price)}</div>
-                  <div style={{ fontSize: 11, opacity: 0.75, marginTop: 2 }}>
-                    {p.suburb} · {p.bedrooms}bd
-                  </div>
-                </div>
-              </Tooltip>
-            </Marker>
-          );
-        })}
-      </MarkerClusterGroup>
+      {useClusters ? (
+        <MarkerClusterGroup
+          chunkedLoading
+          showCoverageOnHover={false}
+          spiderfyOnMaxZoom
+          maxClusterRadius={(z: number) => (z < 8 ? 80 : 50)}
+          iconCreateFunction={clusterIcon}
+        >
+          {markerNodes}
+        </MarkerClusterGroup>
+      ) : (
+        <>{markerNodes}</>
+      )}
     </MapContainer>
+    </div>
   );
 }
