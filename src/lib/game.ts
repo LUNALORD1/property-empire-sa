@@ -519,12 +519,21 @@ export async function processDailyTicks(userId: string) {
     }
 
     // Loan repayments
+    // Apply per-player effective interest-rate modifier from news events of the
+    // last 30 days. Adds to the loan's stored interest rate when computing
+    // monthly interest. Does not mutate the loan's stored rate.
+    const rateModifier = await getEffectiveRateModifier(d);
     for (const ln of loans ?? []) {
       const balance = Number(ln.balance);
       if (balance <= 0) continue;
-      const monthlyRate = Number(ln.interest_rate) / 100 / 12;
+      const monthlyRate = (Number(ln.interest_rate) + rateModifier) / 100 / 12;
       const interest = balance * monthlyRate;
-      const payment = Math.min(Number(ln.monthly_payment), balance + interest);
+      // Recompute monthly payment if rate modifier ≠ 0 so cost reflects shock
+      const basePayment = Number(ln.monthly_payment);
+      const adjustedPayment = rateModifier !== 0
+        ? computeMonthlyPayment(Number(ln.principal), Number(ln.interest_rate) + rateModifier, Number(ln.term_months))
+        : basePayment;
+      const payment = Math.min(adjustedPayment, balance + interest);
       const principalPaid = payment - interest;
       const newBalance = Math.max(0, balance - principalPaid);
       loanTotal += payment;
