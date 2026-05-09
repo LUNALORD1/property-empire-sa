@@ -124,7 +124,7 @@
 
   /* Leaflet attribution polish */
   .leaflet-container {
-    background: var(--color-muted);
+    background: oklch(0.22 0.07 250); /* dark navy ocean */
     font-family: inherit;
   }
   .leaflet-control-attribution {
