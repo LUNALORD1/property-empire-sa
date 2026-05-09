@@ -86,5 +86,6 @@ export async function buyProperty(opts: {
     .update({ total_properties_ever: Number((prof as any)?.total_properties_ever ?? 0) + 1 } as any)
     .eq("id", userId);
 
-  return await checkAchievements(userId);
+  const unlocked = await checkAchievements(userId);
+  return { playerPropertyId: pp?.id as string | undefined, unlocked };
 }
