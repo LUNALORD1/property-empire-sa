@@ -125,7 +125,7 @@ export function DailyGazette({ userId, onClose }: { userId: string; onClose: () 
 
               {/* Human interest */}
               <section className="border-t-2 border-black pt-3">
-                <div className="text-[10px] uppercase tracking-[0.3em] font-bold border-b border-black/40 pb-1 mb-2">Human Interest</div>
+                <div className="text-[10px] uppercase tracking-[0.3em] font-bold border-b border-black/40 pb-1 mb-2">Random Event</div>
                 {latestEvent ? (
                   <article>
                     <h3 className="text-lg font-black leading-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
