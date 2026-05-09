@@ -1,31 +1,42 @@
 import { Home } from "lucide-react";
-import { useState } from "react";
-import { getPropertyImageUrl } from "@/lib/property-image";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { tierForPrice } from "@/lib/game";
+import { buildStreetViewUrl, getCachedMapConfig, getMapConfig } from "@/lib/map-config";
 
 export function PropertyImage({
-  propertyId,
   listingPrice,
-  imageUrl,
+  address,
+  locality,
   alt,
   className,
   loading = "lazy",
+  // Legacy props kept for backwards compatibility — ignored now.
+  propertyId: _propertyId,
+  imageUrl: _imageUrl,
 }: {
-  propertyId: string | undefined | null;
+  propertyId?: string | undefined | null;
   listingPrice: number | undefined | null;
   imageUrl?: string | null;
+  address?: string | null;
+  locality?: string | null;
   alt?: string;
   className?: string;
   loading?: "lazy" | "eager";
 }) {
   const [errored, setErrored] = useState(false);
-  // Prefer DB-stored image_url (unique per property), fall back to deterministic
-  // generator for any legacy rows without an image_url set.
-  const src = imageUrl ?? getPropertyImageUrl(propertyId, listingPrice);
-  const tier = listingPrice ? tierForPrice(Number(listingPrice)).id : null;
+  const [key, setKey] = useState<string>(getCachedMapConfig()?.streetViewKey ?? "");
+  useEffect(() => {
+    if (key) return;
+    let alive = true;
+    getMapConfig().then((c) => { if (alive) setKey(c.streetViewKey); });
+    return () => { alive = false; };
+  }, [key]);
 
-  if (errored) {
+  const tier = listingPrice ? tierForPrice(Number(listingPrice)).id : null;
+  const src = key ? buildStreetViewUrl(address, locality, key) : null;
+
+  if (errored || !src) {
     return (
       <div
         className={cn(
@@ -34,7 +45,7 @@ export function PropertyImage({
         )}
         aria-label={alt ?? "Property image unavailable"}
       >
-        <Home className="w-10 h-10 text-[hsl(var(--gradient-gold-from,45_90%_55%))] text-amber-400" />
+        <Home className="w-10 h-10 text-amber-400" />
         {tier != null && (
           <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-400/15 text-amber-300 border border-amber-400/30 tracking-wide">
             T{tier}
