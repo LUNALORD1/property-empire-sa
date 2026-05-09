@@ -7,6 +7,7 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { tierForPrice, type City, type Property } from "@/lib/game";
 import { formatZAR } from "@/lib/format";
 import { Wallet } from "lucide-react";
+import { TIERS } from "@/lib/game";
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -200,11 +201,11 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
         <Circle
           key={`halo-outer-${c.id}`}
           center={[c.latitude, c.longitude]}
-          radius={zoom < 7 ? 90000 : 60000}
+          radius={zoom < 7 ? 120000 : 75000}
           pathOptions={{
             stroke: false,
             fillColor: "oklch(0.82 0.16 75)",
-            fillOpacity: 0.10,
+            fillOpacity: 0.18,
           }}
           interactive={false}
         />
@@ -255,6 +256,25 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
         <>{markerNodes}</>
       )}
     </MapContainer>
+    {zoom >= 10 && (
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[400] pointer-events-none px-2 max-w-[100vw]">
+        <div className="pointer-events-auto rounded-full bg-card/80 backdrop-blur-xl border border-border/60 px-3 py-1.5 shadow-card flex items-center gap-3 text-[10px] whitespace-nowrap overflow-x-auto">
+          <span className="flex items-center gap-1"><Dot color="oklch(0.62 0.18 155)" />Rented</span>
+          <span className="flex items-center gap-1"><Dot color="oklch(0.75 0.18 70)" />Vacant</span>
+          <span className="flex items-center gap-1"><Dot color="oklch(0.58 0.20 25)" />Locked</span>
+          <span className="text-border">|</span>
+          {TIERS.map((t) => (
+            <span key={t.id} className="flex items-center gap-1">
+              <Dot color={TIER_COLORS[t.id]} />{t.short}
+            </span>
+          ))}
+        </div>
+      </div>
+    )}
     </div>
   );
+}
+
+function Dot({ color }: { color: string }) {
+  return <span className="inline-block w-2 h-2 rounded-full" style={{ background: color }} />;
 }
