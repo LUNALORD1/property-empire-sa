@@ -216,6 +216,9 @@ export function DailyReportModal({ userId, onClose }: { userId: string; onClose:
               )}
             </Section>
           </div>
+          ) : (
+            <GuideTab />
+          )}
         </div>
       </div>
     </Overlay>
@@ -252,4 +255,142 @@ function ModRow({ icon, label, value, hint, tone }: {
 function formatDate(d: string): string {
   if (!d) return "";
   return new Date(d + "T00:00:00").toLocaleDateString("en-ZA", { month: "short", day: "numeric" });
+}
+
+function TabButton({ active, onClick, icon, children }: {
+  active: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        "flex items-center gap-1.5 px-4 py-2 text-xs font-semibold transition-colors border-b-2 -mb-[1px] " +
+        (active
+          ? "text-primary border-primary"
+          : "text-muted-foreground border-transparent hover:text-foreground")
+      }
+    >
+      {icon}{children}
+    </button>
+  );
+}
+
+function GuideTab() {
+  return (
+    <div className="overflow-y-auto p-4 space-y-2.5">
+      <p className="text-xs text-muted-foreground italic px-1">
+        Tap any section to expand. Everything here describes how the game actually works today.
+      </p>
+      <GuideSection icon={<Rocket className="w-4 h-4" />} title="Getting Started">
+        <ul className="space-y-1.5">
+          <li>You start with <strong>R500,000</strong> in cash.</li>
+          <li>Browse properties on the map or in the <strong>Market</strong> tab.</li>
+          <li>Pin colours show tier — white = Entry, blue = Mid Entry, <span className="text-amber-300 font-semibold">gold = Mid Range</span>, orange = Prestige, <span className="text-red-400 font-semibold">red = Trophy</span>. Tap any pin to view details.</li>
+          <li>Buy with cash or take out a bond once you own your first property.</li>
+        </ul>
+      </GuideSection>
+
+      <GuideSection icon={<Layers className="w-4 h-4" />} title="Property Tiers">
+        <ul className="space-y-1.5">
+          <li><strong>Entry (Tier 1):</strong> under R500k — high rental yield %, low absolute income.</li>
+          <li><strong>Mid Entry (Tier 2):</strong> R500k–R1.5M — solid returns, good first-bond properties.</li>
+          <li><strong>Mid Range (Tier 3):</strong> R1.5M–R4M — established suburbs, strong appreciation.</li>
+          <li><strong>Prestige (Tier 4):</strong> R4M–R12M — premium areas, lower yield but strong capital growth.</li>
+          <li><strong>Trophy (Tier 5):</strong> R12M+ — luxury, maximum appreciation and prestige, low yield.</li>
+        </ul>
+      </GuideSection>
+
+      <GuideSection icon={<Users className="w-4 h-4" />} title="Renting Your Properties">
+        <ul className="space-y-1.5">
+          <li>Properties don't rent automatically — you choose a tenant from the applicant pool.</li>
+          <li>Each tenant type has its own rent offer, reliability, damage risk and lease length.</li>
+          <li>Post an Ad for <strong>R2,000</strong> to refresh your applicant list if you don't like your options.</li>
+          <li>Tenant happiness drops if condition falls or maintenance is ignored — unhappy tenants leave.</li>
+          <li>Evictions take <strong>2 in-game months</strong> during which you still pay costs but receive no rent.</li>
+        </ul>
+      </GuideSection>
+
+      <GuideSection icon={<Banknote className="w-4 h-4" />} title="Loans & Bonds">
+        <ul className="space-y-1.5">
+          <li>You can take a bond once you own at least one property.</li>
+          <li><strong>LTV affects your rate:</strong> 50% = 11.50%, 70% = 11.75% (prime), 85% = 12.25%, 90% = 12.75%.</li>
+          <li>Shorter terms (10/15/20 yrs) mean higher monthly repayments but much less total interest.</li>
+          <li>Make partial repayments to lower your balance and save interest.</li>
+          <li><strong>3 consecutive partial repayments</strong> earns a 0.1% rate cut on that loan (capped at 0.5%).</li>
+          <li>Own <strong>5+ properties</strong> for Preferred Client (−0.25%) or <strong>10+</strong> for Premium Client (−0.50%) on new bonds.</li>
+          <li>Refinance once a property has appreciated <strong>15%</strong> to release equity as cash.</li>
+        </ul>
+      </GuideSection>
+
+      <GuideSection icon={<Sun className="w-4 h-4" />} title="Daily Tick">
+        <ul className="space-y-1.5">
+          <li>Every real day equals one in-game month.</li>
+          <li>Each tick collects rent from active tenants, pays maintenance on every property, and services loan repayments.</li>
+          <li>Weather affects maintenance — heavy rain can push costs up by ~30%.</li>
+          <li>Check the <strong>Daily Gazette</strong> each morning for an overnight summary.</li>
+        </ul>
+      </GuideSection>
+
+      <GuideSection icon={<LineChart className="w-4 h-4" />} title="Market & Prices">
+        <ul className="space-y-1.5">
+          <li>Property prices change daily based on news events and city momentum.</li>
+          <li>Streaks of positive news days compound price growth — useful for flipping.</li>
+          <li>The <strong>Market</strong> tab shows each city's momentum and today's price change.</li>
+          <li>Listings expire after <strong>7–21 days</strong> and rotate — check back daily.</li>
+        </ul>
+      </GuideSection>
+
+      <GuideSection icon={<AlertTriangle className="w-4 h-4 text-destructive" />} title="Going Bust (Red Zone)">
+        <ul className="space-y-1.5">
+          <li>If your cash goes negative you enter the <strong>Red Zone</strong> — 3 days to recover.</li>
+          <li><strong>Day 1:</strong> a random tenant leaves immediately.</li>
+          <li><strong>Day 2:</strong> your lowest-value property is force-sold at a 15% discount (plus 5% commission).</li>
+          <li><strong>Day 3:</strong> Game Over.</li>
+          <li>Watch your debt-to-income ratio on the Finances tab — above 80% is dangerous.</li>
+          <li>SARB rate hikes from news events raise all your loan repayments immediately.</li>
+        </ul>
+      </GuideSection>
+
+      <GuideSection icon={<Briefcase className="w-4 h-4" />} title="Admin Points">
+        <ul className="space-y-1.5">
+          <li>Each bedroom you own uses <strong>1 admin point</strong>. Your cap starts at <strong>10</strong>.</li>
+          <li>Hire an Assistant for <strong>R8,000/month</strong> to add 10 points to your cap.</li>
+          <li>You can't buy a property that would exceed your cap.</li>
+        </ul>
+      </GuideSection>
+
+      <GuideSection icon={<Sparkles className="w-4 h-4" />} title="Random Events">
+        <ul className="space-y-1.5">
+          <li>Roughly every <strong>2 in-game months</strong> a personal random event fires — small cash bonuses or unexpected costs.</li>
+          <li>These are personal life events, not market news — review the full history under <strong>Finances → Random Events</strong>.</li>
+        </ul>
+      </GuideSection>
+
+      <GuideSection icon={<Lightbulb className="w-4 h-4" />} title="Tips for New Players">
+        <ul className="space-y-1.5">
+          <li>Start with a Tier 1 or Tier 2 property you can afford outright — avoid bonds until you have rental income.</li>
+          <li>Keep at least <strong>2–3 months</strong> of expenses as a cash buffer before taking on debt.</li>
+          <li>Check city momentum before buying — avoid cities with several days of negative momentum unless you're holding long.</li>
+          <li>Renovate when condition drops below <strong>80</strong> — cheap fix; falling under 70 hurts rent demand.</li>
+          <li>Watch the news ticker — SARB rate hikes are the fastest way to get into trouble if you're overleveraged.</li>
+        </ul>
+      </GuideSection>
+    </div>
+  );
+}
+
+function GuideSection({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <details className="group rounded-xl border border-border bg-background/40 overflow-hidden">
+      <summary className="flex items-center gap-2 px-3 py-2.5 cursor-pointer list-none hover:bg-card/60 transition-colors">
+        <span className="text-primary">{icon}</span>
+        <span className="text-sm font-bold text-gradient-gold flex-1">{title}</span>
+        <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="px-4 pt-1 pb-4 text-sm text-muted-foreground leading-relaxed border-t border-border/60">
+        {children}
+      </div>
+    </details>
+  );
 }
