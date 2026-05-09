@@ -107,7 +107,7 @@ function PortfolioPage() {
           return (
             <div key={p.id} className="rounded-2xl bg-gradient-card border border-border overflow-hidden shadow-card">
               <div className="aspect-[16/9] bg-muted relative">
-                <PropertyImage propertyId={p.property?.id ?? p.property_id} listingPrice={p.property?.listing_price ?? p.purchase_price} alt={p.property?.address} />
+                <PropertyImage propertyId={p.property?.id ?? p.property_id} listingPrice={p.property?.listing_price ?? p.purchase_price} imageUrl={(p.property as any)?.image_url} alt={p.property?.address} />
                 <StatusPill status={p.status} applicants={applicants} />
               </div>
               <div className="p-3 space-y-2.5">
