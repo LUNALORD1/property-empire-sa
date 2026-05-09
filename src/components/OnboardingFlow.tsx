@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Building2, MapPin, Hand, CalendarClock, ArrowRight, ZoomIn } from "lucide-react";
+import { Building2, MapPin, Hand, CalendarClock, ArrowRight, ZoomIn, Compass } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import skyline from "@/assets/onboarding-skyline.jpg";
@@ -113,13 +113,14 @@ export function OnboardingFlow({
         <CoachIcon icon={<MapPin className="w-5 h-5" />} />
         <CoachTitle>Read the map</CoachTitle>
         <CoachBody>
-          <span className="inline-flex items-center gap-1.5"><Dot color="oklch(0.82 0.14 85)" /> gold pins are <b>for sale</b></span><br />
-          <span className="inline-flex items-center gap-1.5"><Dot color="oklch(0.62 0.18 155)" /> green pins are <b>rented</b> (yours)</span><br />
-          <span className="inline-flex items-center gap-1.5"><Dot color="oklch(0.75 0.18 70)" /> orange pins are <b>vacant</b></span>
+          Pin <b>colour = tier</b>:
+          <span className="block mt-1">
+            <Dot color="oklch(0.88 0.01 260)" /> Entry · <Dot color="oklch(0.68 0.16 240)" /> Mid · <Dot color="oklch(0.82 0.14 85)" /> Mid&nbsp;Range · <Dot color="oklch(0.72 0.18 50)" /> Prestige · <Dot color="oklch(0.62 0.21 25)" /> Trophy
+          </span>
+          <span className="block mt-2">A green ✓ badge = your <b>rented</b> property, amber ● = your <b>vacant</b> one, 🔒 = out of your budget.</span>
           <span className="block mt-2 pt-2 border-t border-border/50">
             <ZoomIn className="w-3.5 h-3.5 inline mr-1 text-primary" />
-            <b>Pinch or scroll</b> to zoom into a city — pins cluster tight in
-            Cape Town, Joburg & Durban.
+            <b>Pinch or scroll</b> to zoom into Cape Town, Joburg, Pretoria, Durban or PE — listings cluster until you zoom in.
           </span>
         </CoachBody>
         <CoachActions>
@@ -137,14 +138,13 @@ export function OnboardingFlow({
     return (
       <Coachmark anchor="bottom" onSkip={finish}>
         <CoachIcon icon={<Hand className="w-5 h-5" />} />
-        <CoachTitle>Tap any gold pin to buy</CoachTitle>
+        <CoachTitle>Tap any pin to buy</CoachTitle>
         <CoachBody>
-          You start with <b>R350,000</b> in cash — enough to buy an Entry-tier property outright. Pick a property on the map, then tap{" "}
+          You start with <b>R500,000</b> in cash — enough to buy an Entry-tier property outright. Pick a property on the map, then tap{" "}
           <span className="text-primary font-semibold">Buy</span>. Your first one must be cash —
-          bonds unlock after that.
+          bonds (with tiered LTV rates and refinance) unlock after that.
           <span className="block mt-2 pt-2 border-t border-border/50 text-foreground/80">
-            Tip: buying <b>3+ properties in the same city</b> unlocks area
-            achievements and makes managing your empire easier.
+            Tip: own <b>5+ properties</b> for Preferred Client (−0.25% on bonds), <b>10+</b> for Premium (−0.50%).
           </span>
         </CoachBody>
       </Coachmark>
@@ -170,6 +170,12 @@ export function OnboardingFlow({
               any bond repayments. Vacant properties cost money — pick a tenant from the
               applicant pool to start earning.
             </p>
+            <div className="text-xs text-muted-foreground mt-3 text-left space-y-1.5 bg-background/40 rounded-xl p-3 border border-border">
+              <div>· <b className="text-foreground">News ticker</b> drives daily city price moves</div>
+              <div>· <b className="text-foreground">Daily Gazette</b> recaps overnight every morning</div>
+              <div>· <Compass className="w-3 h-3 inline -mt-0.5" /> <b className="text-foreground">Hub tab</b> = leaderboard, daily report & full game guide</div>
+              <div>· Watch your cash — dropping below R0 starts the <b className="text-destructive">Red Zone</b> (3-day countdown to game over)</div>
+            </div>
             <Button onClick={finish} disabled={busy} className="w-full mt-5 h-11 bg-gradient-gold text-primary-foreground font-semibold shadow-gold">
               Let's go
             </Button>

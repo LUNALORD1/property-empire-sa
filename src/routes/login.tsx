@@ -78,8 +78,8 @@ function LoginPage() {
           </p>
           <div className="grid grid-cols-3 gap-3 pt-4">
             {[
-              { k: "R350k", v: "Starting cash" },
-              { k: "70+", v: "Live listings" },
+              { k: "R500k", v: "Starting cash" },
+              { k: "120+", v: "Live listings" },
               { k: "5", v: "SA cities" },
             ].map((s) => (
               <div key={s.v} className="rounded-xl bg-card/60 border border-border p-4">
@@ -88,6 +88,11 @@ function LoginPage() {
               </div>
             ))}
           </div>
+          <ul className="text-xs text-muted-foreground space-y-1.5 pt-2">
+            <li>· Pick tenants, take out bonds, refinance for equity</li>
+            <li>· Live news ticker & daily market modifiers</li>
+            <li>· Daily leaderboard across all SA empires</li>
+          </ul>
         </div>
         <div className="text-xs text-muted-foreground">© Property Empire SA</div>
       </div>
@@ -110,7 +115,7 @@ function LoginPage() {
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
               {mode === "signup"
-                ? "Start with R350,000 and 120+ tiered listings on the market."
+                ? "Start with R500,000 cash and 120+ tiered listings across 5 SA cities."
                 : "Pick up where you left off — your tenants have been busy."}
             </p>
           </div>
