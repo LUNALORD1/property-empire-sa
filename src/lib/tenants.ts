@@ -215,6 +215,44 @@ export async function declineApplicant(applicantId: string) {
   await (supabase as any).from("tenant_applicants").delete().eq("id", applicantId);
 }
 
+// ---------- Renovate property ----------
+export async function renovateProperty(opts: { userId: string; playerPropertyId: string }) {
+  const { userId, playerPropertyId } = opts;
+  const { data: pp } = await supabase
+    .from("player_properties")
+    .select("id, current_value, condition_score, property_id")
+    .eq("id", playerPropertyId)
+    .single();
+  if (!pp) throw new Error("Property not found");
+  const value = Number(pp.current_value);
+  const cost = Math.round(value * 0.01);
+  const { data: prof } = await supabase.from("profiles").select("cash").eq("id", userId).single();
+  const cash = Number(prof?.cash ?? 0);
+  if (cash < cost) throw new Error("Insufficient funds");
+  const newCondition = Math.min(100, Number((pp as any).condition_score ?? 100) + 20);
+  await supabase.from("profiles").update({ cash: cash - cost }).eq("id", userId);
+  await supabase
+    .from("player_properties")
+    .update({ condition_score: newCondition } as any)
+    .eq("id", playerPropertyId);
+  await supabase.from("ledger").insert({
+    player_id: userId,
+    type: "renovation",
+    amount: -cost,
+    property_id: pp.property_id,
+    description: `Renovation (+20 condition)`,
+  });
+  return { cost, newCondition };
+}
+
+// ---------- Set property nickname ----------
+export async function setPropertyNickname(opts: { playerPropertyId: string; nickname: string | null }) {
+  await supabase
+    .from("player_properties")
+    .update({ nickname: opts.nickname } as any)
+    .eq("id", opts.playerPropertyId);
+}
+
 // ---------- Post an Ad (paid applicant generation) ----------
 export const AD_COST = 2000;
 
