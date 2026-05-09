@@ -1,17 +1,17 @@
-import { Bed, Bath, MapPin, X, TrendingUp, Wrench, Banknote, Wallet, CloudRain } from "lucide-react";
+import { Bed, Bath, MapPin, X, TrendingUp, Wrench, Banknote, Wallet, CloudRain, Shield, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatZAR } from "@/lib/format";
-import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, PRIME_RATE, tierForPrice, type Property } from "@/lib/game";
+import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, originationRate, ltvBaseRate, preferredDiscount, preferredTier, tierForPrice, type Property } from "@/lib/game";
 import { useEffect, useMemo, useState } from "react";
 import { Overlay } from "@/components/Overlay";
 import { Z } from "@/lib/z";
 import { PropertyImage } from "@/components/PropertyImage";
 
-export type BuyOptions = { useBond: boolean; ltv: number; deposit: number; monthlyPayment: number };
+export type BuyOptions = { useBond: boolean; ltv: number; deposit: number; monthlyPayment: number; termMonths: number; insurance: boolean };
 
 export function PropertyCard({
   property, cityName, weatherLabel, weatherMultiplier, cash, onClose, onBuy, busy, owned, canFinance,
-  adminUsed, adminCap, monthlyIncome = 0, currentMonthlyPayments = 0,
+  adminUsed, adminCap, monthlyIncome = 0, currentMonthlyPayments = 0, ownedCount = 0,
 }: {
   property: Property; cityName?: string; weatherLabel?: string; weatherMultiplier?: number; cash: number;
   onClose: () => void;
@@ -21,6 +21,7 @@ export function PropertyCard({
   adminUsed: number; adminCap: number;
   monthlyIncome?: number;
   currentMonthlyPayments?: number;
+  ownedCount?: number;
 }) {
   const rent = computeMonthlyRent(property);
   const maint = computeMonthlyMaintenance(property.listing_price, weatherMultiplier ?? 1);
@@ -29,14 +30,23 @@ export function PropertyCard({
 
   const [useBond, setUseBond] = useState(false);
   const [ltv, setLtv] = useState(85);
+  const [termYears, setTermYears] = useState<10 | 15 | 20>(20);
+  const [insurance, setInsurance] = useState(false);
 
   const principal = Math.round(property.listing_price * (ltv / 100));
   const deposit = property.listing_price - principal;
+  const rate = useMemo(() => originationRate(ltv, ownedCount), [ltv, ownedCount]);
+  const baseRate = ltvBaseRate(ltv);
+  const discount = preferredDiscount(ownedCount);
+  const tierBadge = preferredTier(ownedCount);
+  const termMonths = termYears * 12;
   const monthlyPayment = useMemo(
-    () => (useBond ? computeMonthlyPayment(principal, PRIME_RATE, 240) : 0),
-    [useBond, principal],
+    () => (useBond ? computeMonthlyPayment(principal, rate, termMonths) : 0),
+    [useBond, principal, rate, termMonths],
   );
-  const cashflow = rent - maint - monthlyPayment;
+  const insurancePremium = useBond && insurance ? Math.round(principal * 0.002) : 0;
+  const totalInterest = useBond ? Math.max(0, monthlyPayment * termMonths - principal) : 0;
+  const cashflow = rent - maint - monthlyPayment - insurancePremium;
   const upfront = useBond ? deposit : property.listing_price;
   const canAfford = cash >= upfront;
   const wouldExceedCap = adminUsed + property.bedrooms > adminCap;
@@ -53,7 +63,7 @@ export function PropertyCard({
   }, [onClose]);
 
   function handleBuyClick() {
-    const opts: BuyOptions = { useBond, ltv, deposit: useBond ? deposit : property.listing_price, monthlyPayment };
+    const opts: BuyOptions = { useBond, ltv, deposit: useBond ? deposit : property.listing_price, monthlyPayment, termMonths, insurance };
     if (dtiWillBeRed) {
       setDtiConfirm(opts);
       return;
@@ -140,7 +150,18 @@ export function PropertyCard({
                           onClick={() => setLtv(v)}
                           className={"flex-1 py-1.5 rounded-md text-[11px] font-semibold border transition-colors " +
                             (ltv === v ? "bg-primary/20 border-primary text-primary" : "bg-card border-border text-muted-foreground hover:text-foreground")}
-                        >{v}% LTV</button>
+                        >{v}%<div className="text-[9px] opacity-80 font-normal">{ltvBaseRate(v).toFixed(2)}%</div></button>
+                      ))}
+                    </div>
+                    <div className="flex gap-1.5 mt-1">
+                      {[10, 15, 20].map((y) => (
+                        <button
+                          key={y}
+                          type="button"
+                          onClick={() => setTermYears(y as 10|15|20)}
+                          className={"flex-1 py-1.5 rounded-md text-[11px] font-semibold border transition-colors " +
+                            (termYears === y ? "bg-primary/20 border-primary text-primary" : "bg-card border-border text-muted-foreground hover:text-foreground")}
+                        >{y} yrs</button>
                       ))}
                     </div>
                     <div className="grid grid-cols-3 gap-2 pt-1">
@@ -148,7 +169,28 @@ export function PropertyCard({
                       <Mini label="Loan" value={formatZAR(principal, { compact: true })} />
                       <Mini label="Repay/mo" value={formatZAR(monthlyPayment)} />
                     </div>
-                    <div className="text-[10px] text-muted-foreground pt-0.5">Prime {PRIME_RATE}% · 20-year term</div>
+                    <div className="grid grid-cols-2 gap-2 pt-0.5 text-[10px]">
+                      <div className="text-muted-foreground">
+                        Rate <span className="text-foreground font-semibold tabular-nums">{rate.toFixed(2)}%</span>
+                        {discount > 0 && <span className="text-amber-300"> (−{discount.toFixed(2)} loyalty)</span>}
+                      </div>
+                      <div className="text-muted-foreground text-right">
+                        Total interest <span className="text-foreground font-semibold tabular-nums">{formatZAR(totalInterest, { compact: true })}</span>
+                      </div>
+                    </div>
+                    <label className="flex items-center justify-between gap-2 mt-2 p-2 rounded-md bg-card border border-border cursor-pointer">
+                      <span className="flex items-center gap-1.5 text-[11px]">
+                        <Shield className="w-3.5 h-3.5 text-primary" />
+                        Loan insurance <span className="text-muted-foreground">(+{formatZAR(insurancePremium || Math.round(principal * 0.002))}/mo)</span>
+                      </span>
+                      <input type="checkbox" checked={insurance} onChange={(e) => setInsurance(e.target.checked)} className="accent-primary w-4 h-4" />
+                    </label>
+                    {tierBadge && (
+                      <div className="flex items-center gap-1.5 text-[10px] text-amber-300 pt-1">
+                        <Crown className="w-3 h-3" />
+                        {tierBadge === "premium" ? "Premium Client" : "Preferred Client"} — {discount.toFixed(2)}% rate discount applied
+                      </div>
+                    )}
                   </>
                 )}
               </div>
