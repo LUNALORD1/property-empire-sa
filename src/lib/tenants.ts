@@ -78,10 +78,15 @@ export async function generateApplicants(opts: {
   userId: string;
   playerPropertyId: string;
   property: Property & { single_storey?: boolean; is_university_suburb?: boolean; demand_tier?: string };
+  /** If true, replace existing applicants with a fresh pool. Default true. */
+  replace?: boolean;
+  /** Override the count (otherwise computed from demand tier or vacancy time). */
+  count?: number;
 }) {
-  const { userId, playerPropertyId, property } = opts;
+  const { userId, playerPropertyId, property, replace = true } = opts;
   const demand = property.demand_tier ?? "medium";
-  const count = DEMAND_COUNT[demand] ?? 2;
+  const maxCount = DEMAND_COUNT[demand] ?? 2;
+  const count = Math.max(1, Math.min(maxCount, opts.count ?? maxCount));
 
   // Pull renter types and filter eligible
   const { data: types } = await (supabase as any).from("renter_types").select("*");
@@ -111,8 +116,9 @@ export async function generateApplicants(opts: {
     });
   }
 
-  // Clear any existing applicants for this property first
-  await (supabase as any).from("tenant_applicants").delete().eq("player_property_id", playerPropertyId);
+  if (replace) {
+    await (supabase as any).from("tenant_applicants").delete().eq("player_property_id", playerPropertyId);
+  }
   // Floor: every vacant property must have at least one applicant
   if (picks.length === 0) {
     const fallback = allTypes.find((rt) => rt.key === "opportunist") ?? pool[0];
@@ -127,6 +133,42 @@ export async function generateApplicants(opts: {
   }
   if (picks.length) await (supabase as any).from("tenant_applicants").insert(picks);
   return picks;
+}
+
+/**
+ * Top up applicant pool toward the demand-tier max — adds 1 fresh applicant
+ * per call (different type from existing picks). Used by the daily tick.
+ */
+export async function topUpApplicants(opts: {
+  userId: string;
+  playerPropertyId: string;
+  property: Property & { single_storey?: boolean; is_university_suburb?: boolean; demand_tier?: string };
+}) {
+  const { userId, playerPropertyId, property } = opts;
+  const max = DEMAND_COUNT[property.demand_tier ?? "medium"] ?? 2;
+  const { data: existing } = await (supabase as any)
+    .from("tenant_applicants")
+    .select("renter_type_key")
+    .eq("player_property_id", playerPropertyId);
+  const existingKeys = new Set((existing ?? []).map((e: any) => e.renter_type_key));
+  if (existingKeys.size >= max) return;
+
+  const { data: types } = await (supabase as any).from("renter_types").select("*");
+  const allTypes = (types ?? []) as RenterType[];
+  let pool = allTypes.filter((rt) => isEligible(rt, property) && !existingKeys.has(rt.key));
+  if (pool.length === 0) {
+    const opp = allTypes.find((rt) => rt.key === "opportunist");
+    if (opp && !existingKeys.has("opportunist")) pool = [opp];
+    else return;
+  }
+  const choice = pool[Math.floor(Math.random() * pool.length)];
+  const baseRent = estimatedMonthlyRent(property);
+  await (supabase as any).from("tenant_applicants").insert({
+    player_id: userId,
+    player_property_id: playerPropertyId,
+    renter_type_key: choice.key,
+    offered_rent: Math.round(baseRent * Number(choice.rent_modifier)),
+  });
 }
 
 // ---------- Accept an applicant -> create tenant, mark rented ----------
