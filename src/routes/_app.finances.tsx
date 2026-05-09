@@ -199,6 +199,13 @@ function FinancesPage() {
 
 function ledgerTypeLabel(t: string): string {
   if (t === "luck") return "Random Event";
+  if (t === "loan_partial") return "Partial loan repayment";
+  if (t === "loan_payoff") return "Full loan payoff";
+  if (t === "loan_holiday") return "Payment holiday";
+  if (t === "insurance") return "Loan insurance premium";
+  if (t === "insurance_payout") return "Loan insurance payout";
+  if (t === "loyalty_rate") return "Loyalty rate reduction";
+  if (t === "refinance") return "Refinance";
   return t.replace(/_/g, " ");
 }
 
