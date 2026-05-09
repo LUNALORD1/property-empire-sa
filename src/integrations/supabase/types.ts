@@ -466,6 +466,7 @@ export type Database = {
           last_ad_posted_at: string | null
           monthly_maintenance: number
           monthly_rent: number
+          nickname: string | null
           player_id: string
           property_id: string
           purchase_price: number
@@ -482,6 +483,7 @@ export type Database = {
           last_ad_posted_at?: string | null
           monthly_maintenance: number
           monthly_rent: number
+          nickname?: string | null
           player_id: string
           property_id: string
           purchase_price: number
@@ -498,6 +500,7 @@ export type Database = {
           last_ad_posted_at?: string | null
           monthly_maintenance?: number
           monthly_rent?: number
+          nickname?: string | null
           player_id?: string
           property_id?: string
           purchase_price?: number
@@ -535,6 +538,7 @@ export type Database = {
           last_gazette_shown: string | null
           last_luck_event_date: string | null
           last_tick_date: string | null
+          notifications_enabled: boolean
           onboarded: boolean
           peak_net_worth: number
           red_zone_started_at: string | null
@@ -552,6 +556,7 @@ export type Database = {
           last_gazette_shown?: string | null
           last_luck_event_date?: string | null
           last_tick_date?: string | null
+          notifications_enabled?: boolean
           onboarded?: boolean
           peak_net_worth?: number
           red_zone_started_at?: string | null
@@ -569,6 +574,7 @@ export type Database = {
           last_gazette_shown?: string | null
           last_luck_event_date?: string | null
           last_tick_date?: string | null
+          notifications_enabled?: boolean
           onboarded?: boolean
           peak_net_worth?: number
           red_zone_started_at?: string | null
