@@ -204,7 +204,7 @@ export async function acceptApplicant(opts: { userId: string; applicantId: strin
   // Update player_property: rented + new monthly_rent
   await supabase
     .from("player_properties")
-    .update({ status: "rented", monthly_rent: appRow.offered_rent })
+    .update({ status: "rented", monthly_rent: appRow.offered_rent, vacancy_started_at: null } as any)
     .eq("id", appRow.player_property_id);
 
   // Clear all applicants for this property
@@ -239,7 +239,34 @@ export async function renewTenant(opts: { tenantId: string; discount?: boolean }
 
 // ---------- Release tenant (let them go at end of current month) ----------
 export async function releaseTenant(tenantId: string) {
-  await (supabase as any).from("tenants").update({ status: "leaving" }).eq("id", tenantId);
+  // Get the player property + load full property context, then immediately
+  // mark the unit vacant, log vacancy_started_at and generate a fresh applicant
+  // pool — no more waiting until the next daily tick.
+  const { data: t } = await (supabase as any)
+    .from("tenants")
+    .select("id, player_id, player_property_id")
+    .eq("id", tenantId)
+    .single();
+  if (!t) return;
+  await (supabase as any).from("tenants").delete().eq("id", tenantId);
+  await supabase
+    .from("player_properties")
+    .update({ status: "vacant", vacancy_started_at: new Date().toISOString().slice(0, 10) } as any)
+    .eq("id", t.player_property_id);
+
+  const { data: pp } = await supabase
+    .from("player_properties")
+    .select("id, property:property_id(*)")
+    .eq("id", t.player_property_id)
+    .single();
+  const property = (pp as any)?.property;
+  if (property) {
+    await generateApplicants({
+      userId: t.player_id,
+      playerPropertyId: t.player_property_id,
+      property,
+    });
+  }
 }
 
 // ---------- Sell property ----------
