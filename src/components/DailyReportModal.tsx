@@ -8,8 +8,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
-export function DailyReportModal({ userId, onClose }: { userId: string; onClose: () => void }) {
-  const [tab, setTab] = useState<"today" | "guide">("today");
+export function TodayContent({ userId }: { userId: string }) {
   const { data: gazette } = useGazetteData();
   const { data: loans } = useLoans(userId);
   const { data: news } = useNewsHistory(5);
@@ -48,40 +47,8 @@ export function DailyReportModal({ userId, onClose }: { userId: string; onClose:
   const latestEvent = (luck ?? [])[0] as any | undefined;
 
   return (
-    <Overlay onClose={onClose}>
-      <div
-        className="fixed inset-0 grid place-items-center bg-black/80 backdrop-blur p-2 sm:p-4 animate-fade-in"
-        style={{ zIndex: Z.modal }}
-        onClick={onClose}
-      >
-        <div
-          className="relative w-full max-w-2xl max-h-[94vh] bg-card border border-primary/40 rounded-2xl shadow-gold overflow-hidden flex flex-col animate-scale-in"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-gradient-to-r from-card to-primary/15">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-gradient-gold grid place-items-center shadow-gold">
-                {tab === "today" ? <Clock className="w-4 h-4 text-primary-foreground" /> : <BookOpen className="w-4 h-4 text-primary-foreground" />}
-              </div>
-              <div>
-                <div className="text-base font-bold leading-tight">{tab === "today" ? "Daily Report" : "Game Guide"}</div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                  {tab === "today" ? `${dateLabel} · ${monthYear}` : "How everything works"}
-                </div>
-              </div>
-            </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted hover:bg-muted/70 grid place-items-center" aria-label="Close">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex border-b border-border bg-card/50 px-2">
-            <TabButton active={tab === "today"} onClick={() => setTab("today")} icon={<Clock className="w-3.5 h-3.5" />}>Today</TabButton>
-            <TabButton active={tab === "guide"} onClick={() => setTab("guide")} icon={<BookOpen className="w-3.5 h-3.5" />}>Guide</TabButton>
-          </div>
-
-          {tab === "today" ? (
-          <div className="overflow-y-auto p-4 space-y-4">
+    <div className="space-y-4">
+      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{dateLabel} · {monthYear}</div>
             {/* Market modifiers */}
             <Section title="Market Modifiers" subtitle="Daily price movement by city">
               <div className="grid sm:grid-cols-2 gap-2">
@@ -215,13 +182,7 @@ export function DailyReportModal({ userId, onClose }: { userId: string; onClose:
                 </div>
               )}
             </Section>
-          </div>
-          ) : (
-            <GuideTab />
-          )}
-        </div>
-      </div>
-    </Overlay>
+    </div>
   );
 }
 
