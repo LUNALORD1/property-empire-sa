@@ -9,6 +9,7 @@ import { processDailyTicks, type LuckEvent } from "@/lib/game";
 import { DailyTickModal } from "@/components/DailyTickModal";
 import { LuckEventModal } from "@/components/LuckEventModal";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
+import { DailyGazette } from "@/components/DailyGazette";
 import { ACHIEVEMENTS_BY_KEY } from "@/lib/achievements";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,7 @@ function AppShell() {
   const { data: achievements } = useAchievements(user?.id);
   const seenAchievementsRef = useRef<Set<string> | null>(null);
   const [tickSummary, setTickSummary] = useState<{ rent: number; maintenance: number; net: number } | null>(null);
+  const [showGazette, setShowGazette] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) nav({ to: "/login" });
@@ -58,12 +60,33 @@ function AppShell() {
       qc.invalidateQueries({ queryKey: ["ledger", user.id] });
       qc.invalidateQueries({ queryKey: ["loans", user.id] });
       qc.invalidateQueries({ queryKey: ["luck_events", user.id] });
+      qc.invalidateQueries({ queryKey: ["latest_tick", user.id] });
+      qc.invalidateQueries({ queryKey: ["gazette_data"] });
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, profile?.id]);
+
+  // Gazette: show once per real-world day after the tick has run.
+  useEffect(() => {
+    if (!user?.id || !profile) return;
+    if ((profile as any).onboarded === false) return;
+    const today = new Date().toISOString().slice(0, 10);
+    if ((profile as any).last_gazette_shown === today) return;
+    // Only after the tick has actually completed (last_tick_date == today)
+    if ((profile as any).last_tick_date !== today) return;
+    setShowGazette(true);
+  }, [user?.id, profile?.id, (profile as any)?.last_tick_date, (profile as any)?.last_gazette_shown]);
+
+  async function dismissGazette() {
+    setShowGazette(false);
+    if (!user) return;
+    const today = new Date().toISOString().slice(0, 10);
+    await supabase.from("profiles").update({ last_gazette_shown: today } as any).eq("id", user.id);
+    qc.invalidateQueries({ queryKey: ["profile", user.id] });
+  }
 
   const pendingLuck: LuckEvent | undefined = (luckEvents ?? []).find((e) => !e.acknowledged);
   const showOnboarding = !!profile && !profile.onboarded;
@@ -127,6 +150,9 @@ function AppShell() {
       )}
       {!tickSummary && pendingLuck && (
         <LuckEventModal event={pendingLuck} onClose={ackLuck} />
+      )}
+      {!tickSummary && !pendingLuck && showGazette && user && (
+        <DailyGazette userId={user.id} onClose={dismissGazette} />
       )}
       {showOnboarding && user && (
         <OnboardingFlow
