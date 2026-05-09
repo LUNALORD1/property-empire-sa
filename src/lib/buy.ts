@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, PRIME_RATE, type Property } from "@/lib/game";
+import { computeMonthlyRent, computeMonthlyMaintenance, computeMonthlyPayment, originationRate, type Property } from "@/lib/game";
 import { checkAchievements } from "@/lib/achievements";
 import { generateApplicants } from "@/lib/tenants";
 
@@ -11,8 +11,14 @@ export async function buyProperty(opts: {
   ltv: number;
   adminUsed: number;
   adminCap: number;
+  termMonths?: number;
+  insurance?: boolean;
+  ownedCount?: number;
 }) {
   const { userId, property, cash, useBond, ltv, adminUsed, adminCap } = opts;
+  const termMonths = opts.termMonths ?? 240;
+  const insurance = !!opts.insurance;
+  const ownedCount = Number(opts.ownedCount ?? 0);
   if (adminUsed + property.bedrooms > adminCap) {
     throw new Error("Not enough admin points — hire an assistant first");
   }
@@ -52,17 +58,21 @@ export async function buyProperty(opts: {
   });
 
   if (useBond && principal > 0 && pp) {
-    const monthlyPayment = computeMonthlyPayment(principal, PRIME_RATE, 240);
+    const rate = originationRate(ltv, ownedCount);
+    const monthlyPayment = computeMonthlyPayment(principal, rate, termMonths);
     await supabase.from("loans").insert({
       player_id: userId,
       player_property_id: pp.id,
       principal,
       balance: principal,
-      interest_rate: PRIME_RATE,
-      term_months: 240,
+      interest_rate: rate,
+      origination_rate: rate,
+      term_months: termMonths,
       monthly_payment: monthlyPayment,
       ltv,
-    });
+      insurance_active: insurance,
+      insurance_premium_pct: insurance ? 0.2 : 0,
+    } as any);
   }
 
   // Generate initial applicant pool for the new vacant property

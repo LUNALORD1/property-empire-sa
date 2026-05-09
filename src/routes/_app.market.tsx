@@ -72,6 +72,9 @@ function MarketPage() {
         cash: Number(profile?.cash ?? 0),
         useBond: opts.useBond, ltv: opts.ltv,
         adminUsed, adminCap,
+        termMonths: opts.termMonths,
+        insurance: opts.insurance,
+        ownedCount: owned?.length ?? 0,
       });
       if (res.playerPropertyId) {
         setCelebrate({ property: selected, ppId: res.playerPropertyId });
@@ -144,6 +147,7 @@ function MarketPage() {
           weatherMultiplier={Number(cityById[selected.city_id]?.weather_multiplier ?? 1)}
           cash={Number(profile?.cash ?? 0)} owned={!!ownedMap[selected.id]}
           canFinance={canFinance} adminUsed={adminUsed} adminCap={adminCap}
+          ownedCount={owned?.length ?? 0}
           busy={busy} onClose={() => setSelected(null)} onBuy={handleBuy} />
       )}
       {celebrate && (

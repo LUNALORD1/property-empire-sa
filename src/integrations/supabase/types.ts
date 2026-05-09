@@ -264,39 +264,66 @@ export type Database = {
         Row: {
           active: boolean
           balance: number
+          holiday_active: boolean
           id: string
+          insurance_active: boolean
+          insurance_premium_pct: number
           interest_rate: number
+          last_partial_repayment_month: string | null
           ltv: number
           monthly_payment: number
+          origination_rate: number | null
+          overpayment_streak: number
+          payment_holiday_last_used_at: string | null
           player_id: string
           player_property_id: string
           principal: number
+          rate_reduction_applied: number
+          refinanced_at: string | null
           started_at: string
           term_months: number
         }
         Insert: {
           active?: boolean
           balance: number
+          holiday_active?: boolean
           id?: string
+          insurance_active?: boolean
+          insurance_premium_pct?: number
           interest_rate: number
+          last_partial_repayment_month?: string | null
           ltv: number
           monthly_payment: number
+          origination_rate?: number | null
+          overpayment_streak?: number
+          payment_holiday_last_used_at?: string | null
           player_id: string
           player_property_id: string
           principal: number
+          rate_reduction_applied?: number
+          refinanced_at?: string | null
           started_at?: string
           term_months?: number
         }
         Update: {
           active?: boolean
           balance?: number
+          holiday_active?: boolean
           id?: string
+          insurance_active?: boolean
+          insurance_premium_pct?: number
           interest_rate?: number
+          last_partial_repayment_month?: string | null
           ltv?: number
           monthly_payment?: number
+          origination_rate?: number | null
+          overpayment_streak?: number
+          payment_holiday_last_used_at?: string | null
           player_id?: string
           player_property_id?: string
           principal?: number
+          rate_reduction_applied?: number
+          refinanced_at?: string | null
           started_at?: string
           term_months?: number
         }

@@ -3,11 +3,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { useGazetteData, useLedger, useLoans, usePlayerProperties, useProfile, useTenants } from "@/lib/data-hooks";
 import { formatZAR } from "@/lib/format";
 import { netWorth, PRIME_RATE } from "@/lib/game";
-import { AlertTriangle, TrendingUp, TrendingDown, Wallet, Building2, CreditCard, Sigma, Banknote } from "lucide-react";
+import { AlertTriangle, TrendingUp, TrendingDown, Wallet, Building2, CreditCard, Sigma, Banknote, Crown } from "lucide-react";
 import { useMemo } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { QuickActions } from "@/components/QuickActions";
 import { Link } from "@tanstack/react-router";
+import { LoanCard } from "@/components/LoanCard";
+import { preferredTier, preferredDiscount } from "@/lib/game";
 
 export const Route = createFileRoute("/_app/finances")({
   head: () => ({
@@ -48,6 +50,9 @@ function FinancesPage() {
   const dtiPct = isFinite(dti) ? dti * 100 : 999;
   const rateMod = Number(gazette?.rateModifier ?? 0);
   const monthsLeft = Number(gazette?.rateMonthsLeft ?? 0);
+  const ownedCount = (properties ?? []).length;
+  const tier = preferredTier(ownedCount);
+  const discount = preferredDiscount(ownedCount);
 
   const propertyById = useMemo(
     () => Object.fromEntries((properties ?? []).map((p) => [p.id, p])),
@@ -114,18 +119,22 @@ function FinancesPage() {
         <div className="flex items-center gap-2 mb-3">
           <Banknote className="w-4 h-4 text-primary" />
           <div className="text-sm font-semibold">Bonds</div>
-          {activeLoans.length > 0 && (
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground ml-auto">
-              {activeLoans.length} active · prime {Number(activeLoans[0]?.interest_rate) + rateMod}%
-              {rateMod !== 0 && <span className="text-accent ml-1">({rateMod >= 0 ? "+" : ""}{rateMod.toFixed(2)} SARB)</span>}
-            </div>
+          {tier && (
+            <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-bold uppercase border border-amber-400/30">
+              <Crown className="w-3 h-3" /> {tier === "premium" ? "Premium Client" : "Preferred Client"} · −{discount.toFixed(2)}%
+            </span>
           )}
         </div>
+        {tier && (
+          <div className="text-[10px] text-muted-foreground -mt-2 mb-2">
+            New bonds get a {discount.toFixed(2)}% rate discount applied at origination.
+          </div>
+        )}
         {activeLoans.length === 0 ? (
           <div className="space-y-2">
             <div className="text-xs text-muted-foreground">
               You have no outstanding bonds. Once you own at least one property in cash, you can
-              finance any future purchase with a home loan at prime ({PRIME_RATE}%).
+              finance future purchases with a home loan starting from prime ({PRIME_RATE}%).
             </div>
             <Link
               to="/market"
@@ -139,36 +148,14 @@ function FinancesPage() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {activeLoans.map((l) => {
-              const pp = propertyById[l.player_property_id];
-              const paidPct = ((Number(l.principal) - Number(l.balance)) / Number(l.principal)) * 100;
-              const baseRate = Number(l.interest_rate);
-              const effectiveRate = baseRate + rateMod;
-              return (
-                <div key={l.id} className="py-3 first:pt-0 last:pb-0">
-                  <div className="flex items-baseline justify-between mb-1">
-                    <div className="text-sm font-medium truncate pr-2">
-                      {pp?.property?.suburb ?? "Bond"}{" "}
-                      <span className="text-xs text-muted-foreground">· {l.ltv}% LTV</span>
-                    </div>
-                    <div className="text-sm font-bold tabular-nums">{formatZAR(Number(l.balance), { compact: true })}</div>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full bg-gradient-gold" style={{ width: `${Math.min(100, Math.max(0, paidPct))}%` }} />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-muted-foreground mt-1.5">
-                    <span>{formatZAR(Number(l.monthly_payment))}/mo · 20 yr</span>
-                    <span>{paidPct.toFixed(1)}% paid off</span>
-                  </div>
-                  <div className="flex justify-between text-[10px] mt-1">
-                    <span className="text-muted-foreground">
-                      Effective rate: <span className={"font-semibold tabular-nums " + (rateMod > 0 ? "text-destructive" : rateMod < 0 ? "text-success" : "text-foreground")}>{effectiveRate.toFixed(2)}%</span>
-                      {rateMod !== 0 && <span className="ml-1 text-accent">({rateMod >= 0 ? "+" : ""}{rateMod.toFixed(2)} SARB · {monthsLeft}mo left)</span>}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+            {activeLoans.map((l) => (
+              <LoanCard
+                key={l.id} userId={user!.id} loan={l}
+                pp={propertyById[l.player_property_id]}
+                cash={cash} ownedCount={ownedCount}
+                rateMod={rateMod} monthsLeft={monthsLeft}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -212,6 +199,13 @@ function FinancesPage() {
 
 function ledgerTypeLabel(t: string): string {
   if (t === "luck") return "Random Event";
+  if (t === "loan_partial") return "Partial loan repayment";
+  if (t === "loan_payoff") return "Full loan payoff";
+  if (t === "loan_holiday") return "Payment holiday";
+  if (t === "insurance") return "Loan insurance premium";
+  if (t === "insurance_payout") return "Loan insurance payout";
+  if (t === "loyalty_rate") return "Loyalty rate reduction";
+  if (t === "refinance") return "Refinance";
   return t.replace(/_/g, " ");
 }
 
