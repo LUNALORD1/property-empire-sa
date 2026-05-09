@@ -295,7 +295,7 @@ export async function processDailyTicks(userId: string) {
 
   const { data: loans } = await supabase
     .from("loans")
-    .select("id, balance, interest_rate, monthly_payment, term_months, principal")
+    .select("id, balance, interest_rate, monthly_payment, term_months, principal, player_property_id, insurance_active, insurance_premium_pct, holiday_active, last_partial_repayment_month, overpayment_streak, rate_reduction_applied")
     .eq("player_id", userId)
     .eq("active", true);
 
@@ -544,17 +544,62 @@ export async function processDailyTicks(userId: string) {
       }
     }
 
-    // Loan repayments
-    // Apply per-player effective interest-rate modifier from news events of the
-    // last 30 days. Adds to the loan's stored interest rate when computing
-    // monthly interest. Does not mutate the loan's stored rate.
+    // Loan repayments — applies SARB rate modifier, payment holidays, insurance,
+    // overpayment streak loyalty bonuses.
     const rateModifier = await getEffectiveRateModifier(d);
-    for (const ln of loans ?? []) {
+    const monthYYYYMM = d.slice(0, 7);
+    const prevMonthYYYYMM = (() => {
+      const dt = new Date(d + "T00:00:00");
+      dt.setMonth(dt.getMonth() - 1);
+      return dt.toISOString().slice(0, 7);
+    })();
+    for (const ln of (loans ?? []) as any[]) {
       const balance = Number(ln.balance);
       if (balance <= 0) continue;
       const monthlyRate = (Number(ln.interest_rate) + rateModifier) / 100 / 12;
       const interest = balance * monthlyRate;
-      // Recompute monthly payment if rate modifier ≠ 0 so cost reflects shock
+      const propIdForLoan = (pps as any[] ?? []).find((p: any) => p.id === ln.player_property_id)?.property_id;
+
+      // Insurance premium charged monthly regardless
+      let premiumCost = 0;
+      if (ln.insurance_active) {
+        premiumCost = Math.round(Number(ln.principal) * 0.002);
+        loanTotal += premiumCost;
+        ledgerRows.push({ player_id: userId, type: "insurance", amount: -premiumCost, property_id: propIdForLoan, description: "Loan insurance premium" });
+      }
+
+      // Streak bookkeeping
+      let newStreak = Number(ln.overpayment_streak ?? 0);
+      let reductionApplied = Number(ln.rate_reduction_applied ?? 0);
+      let newRate = Number(ln.interest_rate);
+      const partialMonth = ln.last_partial_repayment_month as string | null;
+      if (partialMonth && (partialMonth === prevMonthYYYYMM || partialMonth === monthYYYYMM)) {
+        newStreak += 1;
+        if (newStreak >= 3 && reductionApplied < 0.5) {
+          const cut = Math.min(0.1, 0.5 - reductionApplied);
+          newRate = Math.max(1, newRate - cut);
+          reductionApplied = Math.round((reductionApplied + cut) * 100) / 100;
+          ledgerRows.push({ player_id: userId, type: "loyalty_rate", amount: 0, property_id: propIdForLoan, description: `Loyalty rate reduction — ${cut.toFixed(2)}% off` });
+        }
+      } else {
+        newStreak = 0;
+      }
+
+      // Payment holiday: skip repayment, capitalise interest, clear flag.
+      if (ln.holiday_active) {
+        const newBalance = balance + interest;
+        await supabase.from("loans").update({
+          balance: newBalance,
+          holiday_active: false,
+          interest_rate: newRate,
+          overpayment_streak: 0,
+          rate_reduction_applied: reductionApplied,
+        } as any).eq("id", ln.id);
+        ln.balance = newBalance;
+        ledgerRows.push({ player_id: userId, type: "loan_holiday", amount: 0, property_id: propIdForLoan, description: "Payment holiday — interest capitalised" });
+        continue;
+      }
+
       const basePayment = Number(ln.monthly_payment);
       const adjustedPayment = rateModifier !== 0
         ? computeMonthlyPayment(Number(ln.principal), Number(ln.interest_rate) + rateModifier, Number(ln.term_months))
@@ -562,12 +607,29 @@ export async function processDailyTicks(userId: string) {
       const payment = Math.min(adjustedPayment, balance + interest);
       const principalPaid = payment - interest;
       const newBalance = Math.max(0, balance - principalPaid);
-      loanTotal += payment;
-      ledgerRows.push({ player_id: userId, type: "loan", amount: -payment, description: "Bond repayment" });
-      const updates: any = { balance: newBalance };
+
+      // Insurance covers payment if tenant has missed 2+ consecutive payments.
+      const tenantForLoan = tenantByPP.get(ln.player_property_id);
+      const insuranceCovers = ln.insurance_active && tenantForLoan && Number(tenantForLoan.consecutive_missed_payments) >= 2;
+      if (insuranceCovers) {
+        ledgerRows.push({ player_id: userId, type: "insurance_payout", amount: 0, property_id: propIdForLoan, description: "Loan insurance payout — bond covered" });
+      } else {
+        loanTotal += payment;
+        ledgerRows.push({ player_id: userId, type: "loan", amount: -payment, property_id: propIdForLoan, description: "Bond repayment" });
+      }
+
+      const updates: any = {
+        balance: newBalance,
+        interest_rate: newRate,
+        overpayment_streak: newStreak,
+        rate_reduction_applied: reductionApplied,
+      };
       if (newBalance <= 0.5) updates.active = false;
       await supabase.from("loans").update(updates).eq("id", ln.id);
       ln.balance = newBalance;
+      ln.interest_rate = newRate;
+      ln.overpayment_streak = newStreak;
+      ln.rate_reduction_applied = reductionApplied;
     }
 
     // Assistants payroll
