@@ -564,6 +564,7 @@ export type Database = {
           id: string
           last_gazette_shown: string | null
           last_luck_event_date: string | null
+          last_report_viewed: string | null
           last_tick_date: string | null
           notifications_enabled: boolean
           onboarded: boolean
@@ -582,6 +583,7 @@ export type Database = {
           id: string
           last_gazette_shown?: string | null
           last_luck_event_date?: string | null
+          last_report_viewed?: string | null
           last_tick_date?: string | null
           notifications_enabled?: boolean
           onboarded?: boolean
@@ -600,6 +602,7 @@ export type Database = {
           id?: string
           last_gazette_shown?: string | null
           last_luck_event_date?: string | null
+          last_report_viewed?: string | null
           last_tick_date?: string | null
           notifications_enabled?: boolean
           onboarded?: boolean
