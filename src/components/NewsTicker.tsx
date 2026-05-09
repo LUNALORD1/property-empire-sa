@@ -1,5 +1,7 @@
 import { Sparkles, ArrowDown, ArrowUp, Minus } from "lucide-react";
+import { useState } from "react";
 import { useMarketNews } from "@/lib/data-hooks";
+import { NewsHistoryModal } from "@/components/NewsHistoryModal";
 
 const FALLBACK = [
   { headline: "📊 Markets opening — fresh headlines arriving shortly", price_modifier: 0 },
@@ -7,6 +9,7 @@ const FALLBACK = [
 
 export function NewsTicker() {
   const { data } = useMarketNews();
+  const [open, setOpen] = useState(false);
   const news = (data && data.length ? data : FALLBACK) as Array<{
     id?: string;
     headline: string;
@@ -14,8 +17,14 @@ export function NewsTicker() {
   }>;
   const items = [...news, ...news]; // duplicate for seamless loop
   return (
-    <div className="relative overflow-hidden border-b border-border bg-card/60 backdrop-blur-sm">
-      <div className="flex items-center">
+    <>
+    <button
+      type="button"
+      onClick={() => setOpen(true)}
+      aria-label="View news history"
+      className="relative w-full overflow-hidden border-b border-border bg-card/60 backdrop-blur-sm hover:bg-card/80 transition-colors text-left"
+    >
+      <div className="flex items-center pointer-events-none">
         <div className="shrink-0 z-10 px-3 py-1.5 bg-gradient-gold text-primary-foreground text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
           <Sparkles className="w-3 h-3" /> Live
         </div>
@@ -40,6 +49,8 @@ export function NewsTicker() {
           })}
         </div>
       </div>
-    </div>
+    </button>
+    {open && <NewsHistoryModal onClose={() => setOpen(false)} />}
+    </>
   );
 }
