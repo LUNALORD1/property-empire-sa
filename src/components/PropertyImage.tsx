@@ -25,16 +25,9 @@ export function PropertyImage({
   loading?: "lazy" | "eager";
 }) {
   const [errored, setErrored] = useState(false);
-  const [key, setKey] = useState<string>(getCachedMapConfig()?.streetViewKey ?? "");
-  useEffect(() => {
-    if (key) return;
-    let alive = true;
-    getMapConfig().then((c) => { if (alive) setKey(c.streetViewKey); });
-    return () => { alive = false; };
-  }, [key]);
-
   const tier = listingPrice ? tierForPrice(Number(listingPrice)).id : null;
-  const src = key ? buildStreetViewUrl(address, locality, key) : null;
+  // Street View now goes through a server-side proxy — no API key needed in browser.
+  const src = buildStreetViewUrl(address, locality);
 
   if (errored || !src) {
     return (
