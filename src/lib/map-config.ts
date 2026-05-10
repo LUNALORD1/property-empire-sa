@@ -1,6 +1,9 @@
 // Fetches and caches public map-related API keys from the server.
-// Keys are domain/referrer-restricted on the provider side, so it is
-// acceptable to expose them to the browser at runtime.
+// Stadia tile key is referrer-restricted so it's safe in the browser.
+// Street View images are fetched via a server-side proxy edge function so the
+// Google key never touches the browser.
+
+import { supabase } from "@/integrations/supabase/client";
 
 let cache: { stadiaKey: string; streetViewKey: string } | null = null;
 let inflight: Promise<{ stadiaKey: string; streetViewKey: string }> | null = null;
@@ -26,9 +29,18 @@ export function getCachedMapConfig() {
   return cache;
 }
 
-export function buildStreetViewUrl(address: string | null | undefined, locality: string | null | undefined, key: string): string | null {
-  if (!key) return null;
+export function buildStreetViewUrl(
+  address: string | null | undefined,
+  locality: string | null | undefined,
+  _key?: string,
+): string | null {
   const parts = [address, locality, "South Africa"].filter(Boolean).join(", ");
   if (!parts.trim()) return null;
-  return `https://maps.googleapis.com/maps/api/streetview?size=800x600&location=${encodeURIComponent(parts)}&key=${key}&return_error_codes=true`;
+  // Route via Supabase Edge Function proxy. The proxy injects the API key
+  // server-side and returns the image with permissive CORS headers.
+  const base = (supabase as unknown as { supabaseUrl: string }).supabaseUrl
+    || (import.meta as any).env?.VITE_SUPABASE_URL
+    || "";
+  const url = `${base}/functions/v1/street-view-proxy?address=${encodeURIComponent(parts)}&size=800x600`;
+  return url;
 }
