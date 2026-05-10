@@ -1,8 +1,8 @@
 import { Home } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { tierForPrice } from "@/lib/game";
-import { buildStreetViewUrl, getCachedMapConfig, getMapConfig } from "@/lib/map-config";
+import { buildStreetViewUrl } from "@/lib/map-config";
 
 export function PropertyImage({
   listingPrice,
