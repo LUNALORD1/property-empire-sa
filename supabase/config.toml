@@ -1,1 +1,4 @@
 project_id = "okejlqpjjopbmrcguogn"
+
+[functions.street-view-proxy]
+verify_jwt = false
