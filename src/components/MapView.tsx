@@ -189,6 +189,7 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
       center={[-29.5, 25]}
       zoom={5.5}
       minZoom={5}
+      maxZoom={18}
       maxBounds={[[-38, 10], [-15, 41]]}
       maxBoundsViscosity={1}
       scrollWheelZoom
@@ -203,6 +204,7 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
         <TileLayer
           attribution='&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
           url={`https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${stadiaKey}`}
+          maxZoom={18}
         />
       )}
 
