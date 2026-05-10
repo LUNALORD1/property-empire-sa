@@ -86,7 +86,15 @@ function clusterIcon(cluster: any) {
 
 function ResizeHandler() {
   const map = useMap();
-  useEffect(() => { setTimeout(() => map.invalidateSize(), 50); }, [map]);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        // Map panes can be torn down before this fires (HMR/unmount).
+        if ((map as any)?._mapPane) map.invalidateSize();
+      } catch {}
+    }, 50);
+    return () => clearTimeout(t);
+  }, [map]);
   return null;
 }
 
