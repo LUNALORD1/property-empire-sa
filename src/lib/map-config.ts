@@ -1,24 +1,20 @@
-// Fetches and caches public map-related API keys from the server.
-// Stadia tile key is referrer-restricted so it's safe in the browser.
-// Street View images are fetched via a server-side proxy edge function so the
-// Google key never touches the browser.
+// Fetches and caches the Stadia Maps tile API key from the server.
+// The Stadia key is referrer-restricted so it is safe to expose in the browser.
 
-import { supabase } from "@/integrations/supabase/client";
+let cache: { stadiaKey: string } | null = null;
+let inflight: Promise<{ stadiaKey: string }> | null = null;
 
-let cache: { stadiaKey: string; streetViewKey: string } | null = null;
-let inflight: Promise<{ stadiaKey: string; streetViewKey: string }> | null = null;
-
-export function getMapConfig(): Promise<{ stadiaKey: string; streetViewKey: string }> {
+export function getMapConfig(): Promise<{ stadiaKey: string }> {
   if (cache) return Promise.resolve(cache);
   if (inflight) return inflight;
   inflight = fetch("/api/public/config/maps")
     .then((r) => r.json())
-    .then((data: { stadiaKey: string; streetViewKey: string }) => {
-      cache = data;
-      return data;
+    .then((data: { stadiaKey: string }) => {
+      cache = { stadiaKey: data.stadiaKey ?? "" };
+      return cache;
     })
     .catch(() => {
-      const empty = { stadiaKey: "", streetViewKey: "" };
+      const empty = { stadiaKey: "" };
       cache = empty;
       return empty;
     });
@@ -27,20 +23,4 @@ export function getMapConfig(): Promise<{ stadiaKey: string; streetViewKey: stri
 
 export function getCachedMapConfig() {
   return cache;
-}
-
-export function buildStreetViewUrl(
-  address: string | null | undefined,
-  locality: string | null | undefined,
-  _key?: string,
-): string | null {
-  const parts = [address, locality, "South Africa"].filter(Boolean).join(", ");
-  if (!parts.trim()) return null;
-  // Route via Supabase Edge Function proxy. The proxy injects the API key
-  // server-side and returns the image with permissive CORS headers.
-  const base = (supabase as unknown as { supabaseUrl: string }).supabaseUrl
-    || (import.meta as any).env?.VITE_SUPABASE_URL
-    || "";
-  const url = `${base}/functions/v1/street-view-proxy?address=${encodeURIComponent(parts)}&size=800x600`;
-  return url;
 }
