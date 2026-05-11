@@ -5,9 +5,8 @@ export const Route = createFileRoute("/api/public/config/maps")({
     handlers: {
       GET: async () => {
         const stadiaKey = process.env.STADIA_MAPS_API_KEY ?? "";
-        const streetViewKey = process.env.GOOGLE_STREET_VIEW_API_KEY ?? "";
         return new Response(
-          JSON.stringify({ stadiaKey, streetViewKey }),
+          JSON.stringify({ stadiaKey }),
           {
             status: 200,
             headers: {

@@ -77,6 +77,7 @@ export function AcquisitionCelebration({
           <div className="relative aspect-[16/10] overflow-hidden">
             <div className="absolute inset-0 animate-celebration-zoom origin-center">
               <PropertyImage
+                propertyId={property.id}
                 listingPrice={property.listing_price}
                 address={property.address}
                 locality={property.suburb}
