@@ -2,17 +2,16 @@ import { Home } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { tierForPrice } from "@/lib/game";
-import { buildStreetViewUrl } from "@/lib/map-config";
+import { propertyImageUrl, type PropertyTier } from "@/lib/property-images";
 
 export function PropertyImage({
+  propertyId,
   listingPrice,
   address,
   locality,
   alt,
   className,
   loading = "lazy",
-  // Legacy props kept for backwards compatibility — ignored now.
-  propertyId: _propertyId,
   imageUrl: _imageUrl,
 }: {
   propertyId?: string | undefined | null;
@@ -26,8 +25,9 @@ export function PropertyImage({
 }) {
   const [errored, setErrored] = useState(false);
   const tier = listingPrice ? tierForPrice(Number(listingPrice)).id : null;
-  // Street View now goes through a server-side proxy — no API key needed in browser.
-  const src = buildStreetViewUrl(address, locality);
+  const src = tier
+    ? propertyImageUrl(tier as PropertyTier, propertyId ?? address ?? "", locality ?? "")
+    : null;
 
   if (errored || !src) {
     return (
