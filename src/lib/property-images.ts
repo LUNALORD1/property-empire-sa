@@ -168,6 +168,7 @@ export const PROPERTY_PHOTO_IDS: Record<"tier_1" | "tier_2" | "tier_3" | "tier_4
     "photo-1566668437688-37747d278a8c",
     "photo-1566669437687-8b49f58b3b89",
     "photo-1566737236500-6d5bf0f0b69d",
+    "photo-1567440764-4ed8d0f5c44f",
   ],
   tier_5: [
     "photo-1632323471695-72ab0cd2842c",
