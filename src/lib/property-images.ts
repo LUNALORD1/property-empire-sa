@@ -257,3 +257,39 @@ export function propertyImageUrl(
 ): string {
   return buildPropertyImageUrl(pickPropertyPhotoId(tier, propertyId, suburb));
 }
+
+/** Returns a secondary fallback URL within the same tier (offset +20). */
+export function propertyImageFallbackUrl(
+  tier: PropertyTier,
+  propertyId: string | null | undefined,
+  suburb: string | null | undefined,
+): string {
+  const key = `tier_${tier}` as keyof typeof PROPERTY_PHOTO_IDS;
+  const arr = PROPERTY_PHOTO_IDS[key] ?? PROPERTY_PHOTO_IDS.tier_1;
+  const idHash = hashString(propertyId ?? "");
+  const suburbAdd = suburbCharSum(suburb ?? "");
+  const idx = (idHash + suburbAdd + 20) % arr.length;
+  return buildPropertyImageUrl(arr[idx]);
+}
+
+/** Dev-only: probes every photo ID and logs any that fail to load. */
+let __probeRan = false;
+export function probePropertyImages(): void {
+  if (__probeRan || typeof window === "undefined") return;
+  __probeRan = true;
+  const broken: string[] = [];
+  let pending = 0;
+  for (const tier of Object.keys(PROPERTY_PHOTO_IDS) as Array<keyof typeof PROPERTY_PHOTO_IDS>) {
+    for (const id of PROPERTY_PHOTO_IDS[tier]) {
+      pending++;
+      const img = new Image();
+      img.onload = () => { if (--pending === 0) report(); };
+      img.onerror = () => { broken.push(`${tier}: ${id}`); if (--pending === 0) report(); };
+      img.src = buildPropertyImageUrl(id);
+    }
+  }
+  function report() {
+    if (broken.length === 0) console.log("[property-images] all OK");
+    else console.warn(`[property-images] ${broken.length} broken IDs:`, broken);
+  }
+}
