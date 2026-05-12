@@ -2,7 +2,7 @@ import { Home } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { tierForPrice } from "@/lib/game";
-import { propertyImageUrl, type PropertyTier } from "@/lib/property-images";
+import { propertyImageUrl, propertyImageFallbackUrl, type PropertyTier } from "@/lib/property-images";
 
 export function PropertyImage({
   propertyId,
@@ -23,13 +23,18 @@ export function PropertyImage({
   className?: string;
   loading?: "lazy" | "eager";
 }) {
-  const [errored, setErrored] = useState(false);
+  const [stage, setStage] = useState<"primary" | "secondary" | "failed">("primary");
   const tier = listingPrice ? tierForPrice(Number(listingPrice)).id : null;
+  const key = propertyId ?? address ?? "";
   const src = tier
-    ? propertyImageUrl(tier as PropertyTier, propertyId ?? address ?? "", locality ?? "")
+    ? stage === "primary"
+      ? propertyImageUrl(tier as PropertyTier, key, locality ?? "")
+      : stage === "secondary"
+        ? propertyImageFallbackUrl(tier as PropertyTier, key, locality ?? "")
+        : null
     : null;
 
-  if (errored || !src) {
+  if (stage === "failed" || !src) {
     return (
       <div
         className={cn(
@@ -53,7 +58,7 @@ export function PropertyImage({
       src={src}
       alt={alt ?? "Property"}
       loading={loading}
-      onError={() => setErrored(true)}
+      onError={() => setStage((s) => (s === "primary" ? "secondary" : "failed"))}
       className={cn("w-full h-full object-cover", className)}
     />
   );
