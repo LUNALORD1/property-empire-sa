@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { RedZoneBanner } from "@/components/RedZoneBanner";
+import { probePropertyImages } from "@/lib/property-images";
 
 export const Route = createFileRoute("/_app")({
   component: AppShell,
@@ -25,6 +26,9 @@ function AppShell() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const qc = useQueryClient();
+  useEffect(() => {
+    if (import.meta.env.DEV) probePropertyImages();
+  }, []);
   const { data: profile } = useProfile(user?.id);
   const { data: luckEvents } = useLuckEvents(user?.id);
   const { data: owned } = usePlayerProperties(user?.id);
