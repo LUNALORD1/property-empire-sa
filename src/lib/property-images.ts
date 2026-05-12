@@ -33,16 +33,16 @@ export const PROPERTY_PHOTO_IDS: Record<"tier_1" | "tier_2" | "tier_3" | "tier_4
     "photo-1464082354059-27db6ce50048",
     "photo-1471194402529-8e0f5cf5485c",
     "photo-1449844908441-8829872d2607",
-    "photo-1432888498266-38ffec3eaf0a",
-    "photo-1428542053020-45b6f7f50abe",
-    "photo-1425907698013-bd6e7f5c786b",
-    "photo-1421986527537-888d998adb74",
-    "photo-1415369629372-26f2fe60c467",
-    "photo-1413752362258-7af2a667b590",
-    "photo-1411511653978-fd3c7404e7dd",
-    "photo-1407473531803-45f0b6d39915",
-    "photo-1479839672679-a46483c0e7c8",
-    "photo-1477420836068-3d8b7e4e3f8b",
+    "photo-1558618047-3c8c76ca7d13",
+    "photo-1558981403-c5f9899a28bc",
+    "photo-1558981285-6f0c94958bb6",
+    "photo-1558981806-ec527fa84c39",
+    "photo-1558981852-426c349b37aa",
+    "photo-1558981359-219d6364c9c8",
+    "photo-1567684014761-b65e2e3b4d54",
+    "photo-1567684527776-5e0cc1e68a4e",
+    "photo-1567684501503-b6cb9e4ef29b",
+    "photo-1567440764-4ed8d0f5c44f",
   ],
   tier_2: [
     "photo-1600585154340-be6161a56a0c",
@@ -75,16 +75,16 @@ export const PROPERTY_PHOTO_IDS: Record<"tier_1" | "tier_2" | "tier_3" | "tier_4
     "photo-1486325212027-8081e485255e",
     "photo-1484154218962-a197022b5858",
     "photo-1480074568708-e7b720bb3f09",
-    "photo-1479839672679-a46483c0e7c8",
-    "photo-1477420836068-3d8b7e4e3f8b",
-    "photo-1475855581690-80accde3ae2b",
-    "photo-1474314243412-cd4a79f06204",
-    "photo-1472224371017-08207f84aaae",
-    "photo-1471194402529-8e0f5cf5485c",
-    "photo-1469022563428-aa04fef9f5a4",
-    "photo-1467533003447-e295ff1b0435",
-    "photo-1464082354059-27db6ce50048",
-    "photo-1461823385004-d7660947a7c3",
+    "photo-1566665797739-167ea56c9b85",
+    "photo-1566668437688-37747d278a8c",
+    "photo-1566669437687-8b49f58b3b89",
+    "photo-1566737236500-6d5bf0f0b69d",
+    "photo-1565953522043-baea26b83b7e",
+    "photo-1565402170291-8491f14678db",
+    "photo-1564501049412-61c2a3083791",
+    "photo-1562663474-6cbb3ef35207",
+    "photo-1561343913-fc54f20e6d6a",
+    "photo-1560440021-33f9b867899d",
   ],
   tier_3: [
     "photo-1613490493576-7fde63acd811",
@@ -117,16 +117,16 @@ export const PROPERTY_PHOTO_IDS: Record<"tier_1" | "tier_2" | "tier_3" | "tier_4
     "photo-1563298723-dcfebaa392e3",
     "photo-1561753757-d8880c5a3551",
     "photo-1560185007-cde436f6a4d0",
-    "photo-1557804506-669a67965ba0",
-    "photo-1556020685-ae41abfc9365",
-    "photo-1555041469-a586c61ea9bc",
+    "photo-1559416823-2f014cdb2c73",
+    "photo-1558602010-50ea56e8ae94",
+    "photo-1556912167-09acc8d36b6a",
+    "photo-1556909114-f6e7ad7d3136",
     "photo-1554995207-c18c203602cb",
-    "photo-1553653924-39b70295f8da",
-    "photo-1552664730-d307ca884978",
-    "photo-1551434678-e076c223a692",
-    "photo-1550581190-9c1c48d21d6c",
-    "photo-1549517045-bc93de499ebe",
-    "photo-1548802673-380ab8ebc7b7",
+    "photo-1567684014761-b65e2e3b4d54",
+    "photo-1567684527776-5e0cc1e68a4e",
+    "photo-1565402170291-8491f14678db",
+    "photo-1564501049412-61c2a3083791",
+    "photo-1562663474-6cbb3ef35207",
   ],
   tier_4: [
     "photo-1622015663319-e97e697503ee",
@@ -158,17 +158,17 @@ export const PROPERTY_PHOTO_IDS: Record<"tier_1" | "tier_2" | "tier_3" | "tier_4
     "photo-1590674899484-d5640e854abe",
     "photo-1589834390005-5d4d9a74cd6b",
     "photo-1588880331179-bc9b93a8cb5e",
-    "photo-1587019158091-1a103c5dd17f",
-    "photo-1586023492125-27b2c045efd7",
-    "photo-1585771724684-38269d6639fd",
-    "photo-1584752242818-b4bd1f4a4c00",
-    "photo-1583608205776-bfd35f0d9f83",
-    "photo-1582407947304-fd86f028f716",
-    "photo-1581075467777-4f7e3cb5f6c6",
-    "photo-1580587771525-78b9dba3b914",
-    "photo-1579532537598-459ecdaf39cc",
-    "photo-1578683010236-d716f9a3f461",
-    "photo-1577495508048-b635879837f1",
+    "photo-1558618047-3c8c76ca7d13",
+    "photo-1558981403-c5f9899a28bc",
+    "photo-1558981285-6f0c94958bb6",
+    "photo-1558981806-ec527fa84c39",
+    "photo-1558981852-426c349b37aa",
+    "photo-1558981359-219d6364c9c8",
+    "photo-1566665797739-167ea56c9b85",
+    "photo-1566668437688-37747d278a8c",
+    "photo-1566669437687-8b49f58b3b89",
+    "photo-1566737236500-6d5bf0f0b69d",
+    "photo-1567440764-4ed8d0f5c44f",
   ],
   tier_5: [
     "photo-1632323471695-72ab0cd2842c",
@@ -201,16 +201,16 @@ export const PROPERTY_PHOTO_IDS: Record<"tier_1" | "tier_2" | "tier_3" | "tier_4
     "photo-1606046604972-77cc76aa2109",
     "photo-1605276374104-dee2a0ed3cd6",
     "photo-1604014237800-1c9102c219da",
-    "photo-1603512500383-3e5c5a1e7a61",
-    "photo-1602343168117-bb8ffe3e2e9f",
-    "photo-1601760561441-16420502c7e0",
-    "photo-1600607687939-ce8a6c25118c",
-    "photo-1599809275671-b5942cabc7a2",
-    "photo-1598928506311-c55ded91a20c",
-    "photo-1597935258735-e4279f0ee5e1",
-    "photo-1596436505027-97b28be0be6d",
-    "photo-1595526114035-0d45ed16cfbf",
-    "photo-1594026112284-02bb6f3352fe",
+    "photo-1561343913-fc54f20e6d6a",
+    "photo-1560440021-33f9b867899d",
+    "photo-1559416823-2f014cdb2c73",
+    "photo-1558602010-50ea56e8ae94",
+    "photo-1557804506-669a67965ba0",
+    "photo-1556912167-09acc8d36b6a",
+    "photo-1556909114-f6e7ad7d3136",
+    "photo-1555636222-cae831e670b3",
+    "photo-1554995207-c18c203602cb",
+    "photo-1565953522043-baea26b83b7e",
   ],
 };
 
@@ -256,4 +256,40 @@ export function propertyImageUrl(
   suburb: string | null | undefined,
 ): string {
   return buildPropertyImageUrl(pickPropertyPhotoId(tier, propertyId, suburb));
+}
+
+/** Returns a secondary fallback URL within the same tier (offset +20). */
+export function propertyImageFallbackUrl(
+  tier: PropertyTier,
+  propertyId: string | null | undefined,
+  suburb: string | null | undefined,
+): string {
+  const key = `tier_${tier}` as keyof typeof PROPERTY_PHOTO_IDS;
+  const arr = PROPERTY_PHOTO_IDS[key] ?? PROPERTY_PHOTO_IDS.tier_1;
+  const idHash = hashString(propertyId ?? "");
+  const suburbAdd = suburbCharSum(suburb ?? "");
+  const idx = (idHash + suburbAdd + 20) % arr.length;
+  return buildPropertyImageUrl(arr[idx]);
+}
+
+/** Dev-only: probes every photo ID and logs any that fail to load. */
+let __probeRan = false;
+export function probePropertyImages(): void {
+  if (__probeRan || typeof window === "undefined") return;
+  __probeRan = true;
+  const broken: string[] = [];
+  let pending = 0;
+  for (const tier of Object.keys(PROPERTY_PHOTO_IDS) as Array<keyof typeof PROPERTY_PHOTO_IDS>) {
+    for (const id of PROPERTY_PHOTO_IDS[tier]) {
+      pending++;
+      const img = new Image();
+      img.onload = () => { if (--pending === 0) report(); };
+      img.onerror = () => { broken.push(`${tier}: ${id}`); if (--pending === 0) report(); };
+      img.src = buildPropertyImageUrl(id);
+    }
+  }
+  function report() {
+    if (broken.length === 0) console.log("[property-images] all OK");
+    else console.warn(`[property-images] ${broken.length} broken IDs:`, broken);
+  }
 }
