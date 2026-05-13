@@ -252,6 +252,7 @@ function PortfolioPage() {
                   </div>
                 </div>
 
+                <div onClick={(e) => e.stopPropagation()}>
                 <PropertyActions
                   property={p}
                   tenant={tenant}
@@ -276,6 +277,7 @@ function PortfolioPage() {
                     } finally { setBusyId(null); }
                   }}
                 />
+                </div>
               </div>
             </div>
           );
