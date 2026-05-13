@@ -287,6 +287,7 @@ function PortfolioPage() {
       <CityCollection
         open={collectionOpen}
         onToggle={() => setCollectionOpen(!collectionOpen)}
+        onInfo={() => setCollectionInfo(true)}
         properties={properties}
         cities={cities ?? []}
         market={market ?? []}
@@ -324,6 +325,14 @@ function PortfolioPage() {
           onClose={() => setImpactFor(null)}
         />
       )}
+      {detailFor && (
+        <PropertyDetailDrawer
+          property={detailFor}
+          history={history?.[detailFor.id] ?? []}
+          onClose={() => setDetailFor(null)}
+        />
+      )}
+      {collectionInfo && <CollectionInfoModal onClose={() => setCollectionInfo(false)} />}
     </div>
   );
 }
