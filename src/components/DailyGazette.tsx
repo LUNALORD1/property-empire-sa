@@ -112,7 +112,7 @@ export function DailyGazette({ userId, onClose }: { userId: string; onClose: () 
                   <dl className="text-sm space-y-1">
                     <PersonalRow label="Rent collected" value={"+" + formatZAR(Number(tick.rent_collected))} good />
                     <PersonalRow label="Maintenance" value={"−" + formatZAR(Number(tick.maintenance_paid))} />
-                    <PersonalRow label="Bond repayments" value={"−" + formatZAR(Number((tick as any).loan_paid ?? 0))} />
+                    <PersonalRow label="Loan repayments" value={"−" + formatZAR(Number((tick as any).loan_paid ?? 0))} />
                     <div className="border-t border-black/30 pt-1 mt-1 flex justify-between font-bold text-base">
                       <span>Net cash flow</span>
                       <span>{formatSigned(Number(tick.net_cashflow))}</span>
@@ -133,8 +133,15 @@ export function DailyGazette({ userId, onClose }: { userId: string; onClose: () 
                     </h3>
                     <p className="text-sm mt-1 italic">{latestEvent.description}</p>
                     {Number(latestEvent.amount) !== 0 && (
-                      <div className="text-[11px] mt-1 uppercase tracking-wider opacity-75">
-                        Impact: {formatSigned(Number(latestEvent.amount))}
+                      <div
+                        className={
+                          "mt-2 inline-block px-3 py-1 rounded-md text-base font-black tracking-wide " +
+                          (Number(latestEvent.amount) >= 0
+                            ? "bg-emerald-600 text-white"
+                            : "bg-red-700 text-white")
+                        }
+                      >
+                        {formatSigned(Number(latestEvent.amount))}
                       </div>
                     )}
                   </article>
