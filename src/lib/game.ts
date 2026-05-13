@@ -519,12 +519,26 @@ export async function processDailyTicks(userId: string) {
         .from("property_value_history")
         .upsert(historyRows, { onConflict: "player_property_id,recorded_date" });
       const cutoff = new Date(d + "T00:00:00");
-      cutoff.setDate(cutoff.getDate() - 7);
+      cutoff.setDate(cutoff.getDate() - 30);
       await (supabase as any)
         .from("property_value_history")
         .delete()
         .eq("player_id", userId)
         .lt("recorded_date", cutoff.toISOString().slice(0, 10));
+    }
+
+    // ----- Safety: every vacant property should always have applicants -----
+    for (const pp of (pps as any[]) ?? []) {
+      if (pp.status !== "vacant") continue;
+      const property = (pp as any).properties as any;
+      if (!property) continue;
+      const { data: cur } = await (supabase as any)
+        .from("tenant_applicants")
+        .select("id")
+        .eq("player_property_id", pp.id);
+      if (!cur || cur.length === 0) {
+        await generateApplicants({ userId, playerPropertyId: pp.id, property });
+      }
     }
 
     // ----- Demand drift (per property) -----
