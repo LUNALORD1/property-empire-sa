@@ -13,6 +13,8 @@ import { SellPropertyDialog } from "@/components/SellPropertyDialog";
 import { PropertyImpactModal } from "@/components/PropertyImpactModal";
 import { PropertyImage } from "@/components/PropertyImage";
 import { Sparkline } from "@/components/Sparkline";
+import { PropertyDetailDrawer } from "@/components/PropertyDetailDrawer";
+import { CollectionInfoModal } from "@/components/CollectionInfoModal";
 import { rentMetaFor } from "@/lib/renter-meta";
 import { Button } from "@/components/ui/button";
 import { renewTenant, releaseTenant, renovateProperty } from "@/lib/tenants";
@@ -46,6 +48,8 @@ function PortfolioPage() {
   const [impactFor, setImpactFor] = useState<PlayerProperty | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [collectionOpen, setCollectionOpen] = useState(false);
+  const [collectionInfo, setCollectionInfo] = useState(false);
+  const [detailFor, setDetailFor] = useState<PlayerProperty | null>(null);
   const seenPaidOffRef = useRef<Set<string> | null>(null);
 
   // Loan map: was this property ever financed? Is the bond active now?
@@ -164,7 +168,14 @@ function PortfolioPage() {
           const li = loansByProp[p.id];
           const paidOff = li?.hasAny && !li.active;
           return (
-            <div key={p.id} className="rounded-2xl bg-gradient-card border border-border overflow-hidden shadow-card">
+            <div
+              key={p.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setDetailFor(p)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setDetailFor(p); }}
+              className="rounded-2xl bg-gradient-card border border-border overflow-hidden shadow-card cursor-pointer hover:border-primary/40 transition-colors text-left"
+            >
               <div className="aspect-[16/9] bg-muted relative">
                 <PropertyImage propertyId={p.property?.id ?? p.property_id} listingPrice={p.property?.listing_price ?? p.purchase_price} address={p.property?.address} locality={p.property?.suburb} alt={p.property?.address} />
                 <StatusPill status={p.status} applicants={applicants} />
