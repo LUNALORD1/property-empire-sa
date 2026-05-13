@@ -523,16 +523,30 @@ function PropertyActions({
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
           {applicants > 0 ? `Pick from ${applicants}` : "Find tenant"}
         </Button>
-      ) : tenant ? (
-        <>
-          <Button size="sm" variant="outline" onClick={onRenew} disabled={busy} className="h-9 text-xs">
-            {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} Renew
-          </Button>
-          <Button size="sm" variant="outline" onClick={onRelease} disabled={busy} className="h-9 text-xs">
-            <Users className="w-3.5 h-3.5" /> Release
-          </Button>
-        </>
-      ) : null}
+      ) : tenant ? (() => {
+        // Item #9 — only show Renew/Release within 2 days of lease end.
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const end = new Date(String(tenant.lease_end) + "T00:00:00");
+        const daysToEnd = Math.ceil((end.getTime() - today.getTime()) / 86_400_000);
+        if (daysToEnd > 2) {
+          return (
+            <div className="col-span-2 text-[11px] text-muted-foreground italic flex items-center gap-1.5 pt-1">
+              <Heart className="w-3 h-3 text-success" /> Lease secure · {daysToEnd} day{daysToEnd === 1 ? "" : "s"} until expiry
+            </div>
+          );
+        }
+        return (
+          <>
+            <Button size="sm" variant="outline" onClick={onRenew} disabled={busy} className="h-9 text-xs">
+              {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} Renew
+            </Button>
+            <Button size="sm" variant="outline" onClick={onRelease} disabled={busy} className="h-9 text-xs">
+              <Users className="w-3.5 h-3.5" /> Release
+            </Button>
+          </>
+        );
+      })() : null}
       <Button
         size="sm"
         variant="outline"
