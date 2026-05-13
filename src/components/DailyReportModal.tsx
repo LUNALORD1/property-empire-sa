@@ -71,11 +71,6 @@ export function TodayContent({ userId }: { userId: string }) {
                           {mom > 0 ? <TrendingUp className="w-3 h-3 text-success" /> : mom < 0 ? <ArrowDown className="w-3 h-3 text-destructive" /> : <Minus className="w-3 h-3" />}
                           Momentum {mom > 0 ? "+" : ""}{mom}
                         </span>
-                        {c.weather_label && (
-                          <span className="inline-flex items-center gap-1">
-                            <CloudRain className="w-3 h-3" /> {c.weather_label}
-                          </span>
-                        )}
                       </div>
                       {causeNews && (
                         <div className="mt-2 text-[11px] italic text-muted-foreground border-l-2 border-primary/40 pl-2">
@@ -113,14 +108,37 @@ export function TodayContent({ userId }: { userId: string }) {
                     tone="good"
                   />
                 )}
-                {(cities ?? []).filter((c: any) => Number(c.weather_multiplier ?? 1) !== 1).map((c: any) => (
-                  <ModRow key={c.id} icon={<CloudRain className="w-3.5 h-3.5" />}
-                    label={`${c.name} weather`}
-                    value={`×${Number(c.weather_multiplier).toFixed(2)} maint`}
-                    hint={c.weather_label}
-                    tone={Number(c.weather_multiplier) > 1 ? "bad" : "good"}
-                  />
-                ))}
+              </div>
+            </Section>
+
+            {/* Weather (item #4) — own section, separate from market modifiers */}
+            <Section title="Weather" subtitle="Maintenance & rent impact by city">
+              <div className="grid sm:grid-cols-2 gap-2">
+                {(cities ?? []).map((c: any) => {
+                  const mult = Number(c.weather_multiplier ?? 1);
+                  const rentMod = Number(c.monthly_rent_modifier ?? 0);
+                  const bad = mult > 1.05;
+                  const good = mult < 0.95;
+                  const tone = bad ? "text-destructive" : good ? "text-success" : "text-muted-foreground";
+                  return (
+                    <div key={c.id} className="rounded-xl border border-border bg-background/40 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-sm font-semibold">
+                          <CloudRain className="w-3.5 h-3.5" /> {c.name}
+                        </div>
+                        <div className={"text-xs font-bold tabular-nums " + tone}>×{mult.toFixed(2)}</div>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        {c.weather_label ?? "Clear"} · maintenance {bad ? "up" : good ? "down" : "normal"}
+                      </div>
+                      {rentMod !== 0 && (
+                        <div className={"text-[11px] mt-1 font-medium " + (rentMod > 0 ? "text-success" : "text-destructive")}>
+                          Rent ×{(1 + rentMod).toFixed(3)} ({rentMod > 0 ? "+" : ""}{(rentMod * 100).toFixed(2)}%)
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </Section>
 
@@ -159,14 +177,23 @@ export function TodayContent({ userId }: { userId: string }) {
               {!latestEvent ? (
                 <div className="text-xs text-muted-foreground italic">No random events yet — check back tomorrow.</div>
               ) : (
-                <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-card to-primary/10 p-3">
+                <div
+                  className={
+                    "rounded-xl border p-3 " +
+                    (Number(latestEvent.amount) > 0
+                      ? "border-success/40 bg-success/10"
+                      : Number(latestEvent.amount) < 0
+                        ? "border-destructive/40 bg-destructive/10"
+                        : "border-primary/30 bg-gradient-to-br from-card to-primary/10")
+                  }
+                >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-primary" />
                       <div className="text-sm font-bold">{latestEvent.title}</div>
                     </div>
                     {Number(latestEvent.amount) !== 0 && (
-                      <div className={"text-sm font-bold tabular-nums " + (Number(latestEvent.amount) >= 0 ? "text-success" : "text-destructive")}>
+                      <div className={"px-2.5 py-1 rounded-md text-base font-black tabular-nums text-white " + (Number(latestEvent.amount) >= 0 ? "bg-emerald-600" : "bg-red-700")}>
                         {Number(latestEvent.amount) >= 0 ? "+" : "−"}{formatZAR(Math.abs(Number(latestEvent.amount)))}
                       </div>
                     )}
