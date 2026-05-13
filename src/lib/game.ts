@@ -330,6 +330,15 @@ export async function processDailyTicks(userId: string) {
 
     // ----- Daily market: roll news, update city modifier + listings -----
     const { modByCity } = await applyDailyMarket(d);
+
+    // Pull per-city monthly rent modifier set by today's market events (item #7)
+    const { data: cityRentRows } = await supabase
+      .from("cities")
+      .select("id, monthly_rent_modifier");
+    const rentModByCity: Record<string, number> = {};
+    for (const cr of (cityRentRows ?? []) as any[]) {
+      rentModByCity[cr.id] = Number(cr.monthly_rent_modifier ?? 0);
+    }
     const historyRows: any[] = [];
 
     for (const pp of (pps as any[]) ?? []) {
@@ -371,7 +380,9 @@ export async function processDailyTicks(userId: string) {
         const reliable = Math.random() * 100 < Number(rt.reliability);
         let rent = 0;
         if (reliable) {
-          rent = Number(tenant.monthly_rent);
+          const cityId = (pp as any).properties?.city_id;
+          const rMod = cityId ? (rentModByCity[cityId] ?? 0) : 0;
+          rent = Math.max(0, Math.round(Number(tenant.monthly_rent) * (1 + rMod)));
           rentTotal += rent;
           ledgerRows.push({ player_id: userId, type: "rent", amount: rent, property_id: propertyId, description: `Rent — ${rt.display_name}` });
           tenant.consecutive_missed_payments = 0;
@@ -508,12 +519,26 @@ export async function processDailyTicks(userId: string) {
         .from("property_value_history")
         .upsert(historyRows, { onConflict: "player_property_id,recorded_date" });
       const cutoff = new Date(d + "T00:00:00");
-      cutoff.setDate(cutoff.getDate() - 7);
+      cutoff.setDate(cutoff.getDate() - 30);
       await (supabase as any)
         .from("property_value_history")
         .delete()
         .eq("player_id", userId)
         .lt("recorded_date", cutoff.toISOString().slice(0, 10));
+    }
+
+    // ----- Safety: every vacant property should always have applicants -----
+    for (const pp of (pps as any[]) ?? []) {
+      if (pp.status !== "vacant") continue;
+      const property = (pp as any).properties as any;
+      if (!property) continue;
+      const { data: cur } = await (supabase as any)
+        .from("tenant_applicants")
+        .select("id")
+        .eq("player_property_id", pp.id);
+      if (!cur || cur.length === 0) {
+        await generateApplicants({ userId, playerPropertyId: pp.id, property });
+      }
     }
 
     // ----- Demand drift (per property) -----

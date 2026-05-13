@@ -1,0 +1,1 @@
+ALTER TABLE public.cities ADD COLUMN IF NOT EXISTS monthly_rent_modifier numeric NOT NULL DEFAULT 0;

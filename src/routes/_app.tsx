@@ -29,6 +29,29 @@ function AppShell() {
   useEffect(() => {
     if (import.meta.env.DEV) probePropertyImages();
   }, []);
+
+  // App auto-refresh on focus (item #3): when the tab becomes visible again,
+  // invalidate every player-facing query so cash, portfolio, finances and
+  // market data are always fresh without a manual swipe.
+  useEffect(() => {
+    if (!user?.id) return;
+    const onVis = () => {
+      if (document.visibilityState !== "visible") return;
+      const uid = user.id;
+      ["profile", "player_properties", "loans", "ledger", "tenants", "latest_tick", "luck_events", "applicants_count", "value_history", "achievements", "assistants"].forEach((k) =>
+        qc.invalidateQueries({ queryKey: [k, uid] }),
+      );
+      ["properties", "cities", "market_news", "gazette_data"].forEach((k) =>
+        qc.invalidateQueries({ queryKey: [k] }),
+      );
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onVis);
+    };
+  }, [user?.id, qc]);
   const { data: profile } = useProfile(user?.id);
   const { data: luckEvents } = useLuckEvents(user?.id);
   const { data: owned } = usePlayerProperties(user?.id);
@@ -79,10 +102,13 @@ function AppShell() {
     if ((profile as any).onboarded === false) return;
     const today = new Date().toISOString().slice(0, 10);
     if ((profile as any).last_gazette_shown === today) return;
-    // Only after the tick has actually completed (last_tick_date == today)
-    if ((profile as any).last_tick_date !== today) return;
+    // Show as soon as we have today's tick OR a tickSummary just resolved
+    // (item #1 — no manual refresh required).
+    if ((profile as any).last_tick_date !== today && !tickSummary) return;
+    qc.invalidateQueries({ queryKey: ["latest_tick", user.id] });
+    qc.invalidateQueries({ queryKey: ["gazette_data"] });
     setShowGazette(true);
-  }, [user?.id, profile?.id, (profile as any)?.last_tick_date, (profile as any)?.last_gazette_shown]);
+  }, [user?.id, profile?.id, (profile as any)?.last_tick_date, (profile as any)?.last_gazette_shown, tickSummary, qc]);
 
   async function dismissGazette() {
     setShowGazette(false);

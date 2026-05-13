@@ -88,6 +88,7 @@ export type Database = {
           longitude: number
           modifier_updated_on: string | null
           momentum_score: number
+          monthly_rent_modifier: number
           name: string
           weather_label: string
           weather_multiplier: number
@@ -101,6 +102,7 @@ export type Database = {
           longitude: number
           modifier_updated_on?: string | null
           momentum_score?: number
+          monthly_rent_modifier?: number
           name: string
           weather_label?: string
           weather_multiplier?: number
@@ -114,6 +116,7 @@ export type Database = {
           longitude?: number
           modifier_updated_on?: string | null
           momentum_score?: number
+          monthly_rent_modifier?: number
           name?: string
           weather_label?: string
           weather_multiplier?: number

@@ -13,6 +13,8 @@ import { SellPropertyDialog } from "@/components/SellPropertyDialog";
 import { PropertyImpactModal } from "@/components/PropertyImpactModal";
 import { PropertyImage } from "@/components/PropertyImage";
 import { Sparkline } from "@/components/Sparkline";
+import { PropertyDetailDrawer } from "@/components/PropertyDetailDrawer";
+import { CollectionInfoModal } from "@/components/CollectionInfoModal";
 import { rentMetaFor } from "@/lib/renter-meta";
 import { Button } from "@/components/ui/button";
 import { renewTenant, releaseTenant, renovateProperty } from "@/lib/tenants";
@@ -46,6 +48,8 @@ function PortfolioPage() {
   const [impactFor, setImpactFor] = useState<PlayerProperty | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [collectionOpen, setCollectionOpen] = useState(false);
+  const [collectionInfo, setCollectionInfo] = useState(false);
+  const [detailFor, setDetailFor] = useState<PlayerProperty | null>(null);
   const seenPaidOffRef = useRef<Set<string> | null>(null);
 
   // Loan map: was this property ever financed? Is the bond active now?
@@ -164,7 +168,14 @@ function PortfolioPage() {
           const li = loansByProp[p.id];
           const paidOff = li?.hasAny && !li.active;
           return (
-            <div key={p.id} className="rounded-2xl bg-gradient-card border border-border overflow-hidden shadow-card">
+            <div
+              key={p.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setDetailFor(p)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setDetailFor(p); }}
+              className="rounded-2xl bg-gradient-card border border-border overflow-hidden shadow-card cursor-pointer hover:border-primary/40 transition-colors text-left"
+            >
               <div className="aspect-[16/9] bg-muted relative">
                 <PropertyImage propertyId={p.property?.id ?? p.property_id} listingPrice={p.property?.listing_price ?? p.purchase_price} address={p.property?.address} locality={p.property?.suburb} alt={p.property?.address} />
                 <StatusPill status={p.status} applicants={applicants} />
@@ -241,6 +252,7 @@ function PortfolioPage() {
                   </div>
                 </div>
 
+                <div onClick={(e) => e.stopPropagation()}>
                 <PropertyActions
                   property={p}
                   tenant={tenant}
@@ -265,6 +277,7 @@ function PortfolioPage() {
                     } finally { setBusyId(null); }
                   }}
                 />
+                </div>
               </div>
             </div>
           );
@@ -274,6 +287,7 @@ function PortfolioPage() {
       <CityCollection
         open={collectionOpen}
         onToggle={() => setCollectionOpen(!collectionOpen)}
+        onInfo={() => setCollectionInfo(true)}
         properties={properties}
         cities={cities ?? []}
         market={market ?? []}
@@ -311,6 +325,14 @@ function PortfolioPage() {
           onClose={() => setImpactFor(null)}
         />
       )}
+      {detailFor && (
+        <PropertyDetailDrawer
+          property={detailFor}
+          history={history?.[detailFor.id] ?? []}
+          onClose={() => setDetailFor(null)}
+        />
+      )}
+      {collectionInfo && <CollectionInfoModal onClose={() => setCollectionInfo(false)} />}
     </div>
   );
 }
@@ -332,9 +354,9 @@ function ConditionBar({ value }: { value: number }) {
 }
 
 function CityCollection({
-  open, onToggle, properties, cities, market,
+  open, onToggle, onInfo, properties, cities, market,
 }: {
-  open: boolean; onToggle: () => void;
+  open: boolean; onToggle: () => void; onInfo: () => void;
   properties: PlayerProperty[];
   cities: any[];
   market: any[];
@@ -371,16 +393,23 @@ function CityCollection({
 
   return (
     <div className="mt-6 rounded-2xl bg-card border border-border overflow-hidden">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition"
-      >
-        <div className="flex items-center gap-2">
+      <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition">
+        <button onClick={onToggle} className="flex items-center gap-2 flex-1 text-left">
           <Crown className="w-4 h-4 text-primary" />
           <span className="text-sm font-semibold">City collection — Trophy & Prestige</span>
-        </div>
-        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </button>
+        </button>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onInfo(); }}
+          aria-label="What is this?"
+          className="w-7 h-7 rounded-full grid place-items-center hover:bg-muted text-muted-foreground hover:text-foreground"
+        >
+          <Info className="w-4 h-4" />
+        </button>
+        <button onClick={onToggle} className="ml-1 w-7 h-7 grid place-items-center">
+          {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
+      </div>
       {open && (
         <div className="border-t border-border p-3 space-y-2">
           {stats.map((s) => (
@@ -510,16 +539,30 @@ function PropertyActions({
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
           {applicants > 0 ? `Pick from ${applicants}` : "Find tenant"}
         </Button>
-      ) : tenant ? (
-        <>
-          <Button size="sm" variant="outline" onClick={onRenew} disabled={busy} className="h-9 text-xs">
-            {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} Renew
-          </Button>
-          <Button size="sm" variant="outline" onClick={onRelease} disabled={busy} className="h-9 text-xs">
-            <Users className="w-3.5 h-3.5" /> Release
-          </Button>
-        </>
-      ) : null}
+      ) : tenant ? (() => {
+        // Item #9 — only show Renew/Release within 2 days of lease end.
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const end = new Date(String(tenant.lease_end) + "T00:00:00");
+        const daysToEnd = Math.ceil((end.getTime() - today.getTime()) / 86_400_000);
+        if (daysToEnd > 2) {
+          return (
+            <div className="col-span-2 text-[11px] text-muted-foreground italic flex items-center gap-1.5 pt-1">
+              <Heart className="w-3 h-3 text-success" /> Lease secure · {daysToEnd} day{daysToEnd === 1 ? "" : "s"} until expiry
+            </div>
+          );
+        }
+        return (
+          <>
+            <Button size="sm" variant="outline" onClick={onRenew} disabled={busy} className="h-9 text-xs">
+              {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} Renew
+            </Button>
+            <Button size="sm" variant="outline" onClick={onRelease} disabled={busy} className="h-9 text-xs">
+              <Users className="w-3.5 h-3.5" /> Release
+            </Button>
+          </>
+        );
+      })() : null}
       <Button
         size="sm"
         variant="outline"
