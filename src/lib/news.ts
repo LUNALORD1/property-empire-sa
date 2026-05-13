@@ -58,15 +58,16 @@ function pickWeighted<T extends { weight: number }>(
   items: T[],
   rand: () => number,
   n: number,
+  weightFor?: (item: T) => number,
 ): T[] {
   const pool = [...items];
   const out: T[] = [];
   for (let i = 0; i < n && pool.length; i++) {
-    const total = pool.reduce((s, e) => s + e.weight, 0);
+    const total = pool.reduce((s, e) => s + (weightFor ? weightFor(e) : e.weight), 0);
     let r = rand() * total;
     let idx = 0;
     for (let j = 0; j < pool.length; j++) {
-      r -= pool[j].weight;
+      r -= weightFor ? weightFor(pool[j]) : pool[j].weight;
       if (r <= 0) { idx = j; break; }
     }
     out.push(pool[idx]);
@@ -97,9 +98,12 @@ export async function ensureNewsForDate(date: string): Promise<MarketNews[]> {
   if (!all.length) return [];
 
   const rand = mulberry32(hashSeed(date));
-  // 2-3 events per day
+  // 2-3 events per day. Bias the pool ~60/40 toward positive price movements
+  // so markets feel growth-oriented over time.
   const count = 2 + Math.floor(rand() * 2);
-  const picks = pickWeighted(all, rand, count);
+  const picks = pickWeighted(all, rand, count, (e) =>
+    Number(e.price_modifier) > 0 ? e.weight * 1.5 : e.weight,
+  );
 
   const rows = picks.map((p) => ({
     tick_date: date,
