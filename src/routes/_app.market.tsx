@@ -117,6 +117,11 @@ function MarketPage() {
                 <div className="aspect-[16/10] bg-muted relative">
                   <PropertyImage propertyId={p.id} listingPrice={p.listing_price} address={p.address} locality={p.suburb} alt={p.address} />
                   <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-background/85 text-[10px] font-medium">{cityById[p.city_id]?.name} · {p.suburb}</div>
+                  {(p as any).listed_at && Date.now() - new Date((p as any).listed_at).getTime() < 86_400_000 && (
+                    <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-gradient-gold text-primary-foreground text-[10px] font-bold uppercase tracking-wider shadow-gold animate-pulse">
+                      New
+                    </div>
+                  )}
                   {isOwned
                     ? <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-success/90 text-[10px] font-bold uppercase">Owned</div>
                     : <div className={"absolute top-2 right-2 px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase backdrop-blur " + t.color}>{t.short}</div>}
