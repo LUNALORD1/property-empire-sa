@@ -354,9 +354,9 @@ function ConditionBar({ value }: { value: number }) {
 }
 
 function CityCollection({
-  open, onToggle, properties, cities, market,
+  open, onToggle, onInfo, properties, cities, market,
 }: {
-  open: boolean; onToggle: () => void;
+  open: boolean; onToggle: () => void; onInfo: () => void;
   properties: PlayerProperty[];
   cities: any[];
   market: any[];
@@ -393,16 +393,23 @@ function CityCollection({
 
   return (
     <div className="mt-6 rounded-2xl bg-card border border-border overflow-hidden">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition"
-      >
-        <div className="flex items-center gap-2">
+      <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition">
+        <button onClick={onToggle} className="flex items-center gap-2 flex-1 text-left">
           <Crown className="w-4 h-4 text-primary" />
           <span className="text-sm font-semibold">City collection — Trophy & Prestige</span>
-        </div>
-        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </button>
+        </button>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onInfo(); }}
+          aria-label="What is this?"
+          className="w-7 h-7 rounded-full grid place-items-center hover:bg-muted text-muted-foreground hover:text-foreground"
+        >
+          <Info className="w-4 h-4" />
+        </button>
+        <button onClick={onToggle} className="ml-1 w-7 h-7 grid place-items-center">
+          {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
+      </div>
       {open && (
         <div className="border-t border-border p-3 space-y-2">
           {stats.map((s) => (
