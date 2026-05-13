@@ -210,7 +210,7 @@ export async function applyDailyMarket(date: string): Promise<{
   const events = await ensureNewsForDate(date);
   const { data: citiesRaw } = await supabase
     .from("cities")
-    .select("id, momentum_score, modifier_updated_on");
+    .select("id, name, momentum_score, modifier_updated_on, weather_multiplier, weather_label");
   const cities = (citiesRaw ?? []) as any[];
   if (!cities.length) return { events, modByCity: {} };
 
@@ -220,6 +220,29 @@ export async function applyDailyMarket(date: string): Promise<{
   for (const id of Object.keys(cityMods)) modByCity[id] = cityMods[id].mod;
 
   if (alreadyApplied) return { events, modByCity };
+
+  // Insert one ticker headline per city experiencing notable bad weather
+  // (weather_multiplier > 1.10). Idempotent via UNIQUE(tick_date, event_key).
+  const weatherHeadlines: any[] = [];
+  for (const c of cities) {
+    const mult = Number(c.weather_multiplier ?? 1);
+    if (mult > 1.1) {
+      weatherHeadlines.push({
+        tick_date: date,
+        event_key: `weather_${c.id}_${date}`,
+        headline: `${c.name}: ${c.weather_label ?? "Bad weather"} pushes maintenance ×${mult.toFixed(2)}`,
+        city_id: c.id,
+        price_modifier: 0,
+        event_type: "weather",
+        rate_delta: 0,
+      });
+    }
+  }
+  if (weatherHeadlines.length) {
+    await (supabase as any)
+      .from("market_news")
+      .upsert(weatherHeadlines, { onConflict: "tick_date,event_key", ignoreDuplicates: true });
+  }
 
   for (const c of cities) {
     if (c.modifier_updated_on === date) continue;
@@ -236,12 +259,16 @@ export async function applyDailyMarket(date: string): Promise<{
     }
     nextMomentum = Math.max(MOMENTUM_MIN, Math.min(MOMENTUM_MAX, nextMomentum));
 
+    // Rental income tracks 50% of price movement (item #7).
+    const rentMod = Math.round(entry.mod * 0.5 * 10000) / 10000;
+
     await supabase
       .from("cities")
       .update({
         daily_price_modifier: entry.mod,
         momentum_score: nextMomentum,
         modifier_updated_on: date,
+        monthly_rent_modifier: rentMod,
       } as any)
       .eq("id", c.id);
 
