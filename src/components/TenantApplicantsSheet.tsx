@@ -149,21 +149,25 @@ export function TenantApplicantsSheet({
           </header>
 
           <div className="px-4 pt-3">
-            <Button
-              variant="outline"
-              disabled={postingAd || adPostedRecently || !canAfford}
-              onClick={onPostAd}
-              className="w-full h-10"
-            >
-              <Megaphone className="w-4 h-4" />
-              {adPostedRecently
-                ? "Ad already posted"
-                : !canAfford
-                ? "Insufficient funds"
-                : postingAd
-                ? "Posting…"
-                : `Post an Ad — R${AD_COST.toLocaleString()}`}
-            </Button>
+            {poolExhausted ? (
+              <div className="text-xs text-muted-foreground italic text-center px-2 py-2 rounded-lg border border-dashed border-border">
+                All available tenant types have been contacted — wait for next month's refresh.
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                disabled={postingAd || !canAfford}
+                onClick={onPostAd}
+                className="w-full h-10"
+              >
+                <Megaphone className="w-4 h-4" />
+                {!canAfford
+                  ? "Insufficient funds"
+                  : postingAd
+                  ? "Posting…"
+                  : `Post an Ad — R${AD_COST.toLocaleString()}`}
+              </Button>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
