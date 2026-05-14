@@ -262,20 +262,12 @@ export async function postTenantAd(opts: {
 }) {
   const { userId, playerPropertyId } = opts;
 
-  // Load property + last ad date
   const { data: pp } = await supabase
     .from("player_properties")
-    .select("id, last_ad_posted_at, property:property_id(*)")
+    .select("id, property:property_id(*)")
     .eq("id", playerPropertyId)
     .single();
   if (!pp) throw new Error("Property not found");
-
-  // One ad per in-game month (30 days)
-  const last = (pp as any).last_ad_posted_at as string | null;
-  if (last) {
-    const diffDays = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
-    if (diffDays < 30) throw new Error("Ad already posted this month");
-  }
 
   // Check funds
   const { data: prof } = await supabase.from("profiles").select("cash").eq("id", userId).single();
@@ -285,7 +277,6 @@ export async function postTenantAd(opts: {
   const property = (pp as any).property;
   if (!property) throw new Error("Property data missing");
 
-  // Pick a renter type not already in the pool
   const { data: existing } = await (supabase as any)
     .from("tenant_applicants")
     .select("renter_type_key")
@@ -294,19 +285,13 @@ export async function postTenantAd(opts: {
 
   const { data: types } = await (supabase as any).from("renter_types").select("*");
   const allTypes = (types ?? []) as RenterType[];
-  let pool = allTypes.filter((rt) => isEligible(rt, property) && !existingKeys.has(rt.key));
+  const pool = allTypes.filter((rt) => isEligible(rt, property) && !existingKeys.has(rt.key));
   if (pool.length === 0) {
-    pool = allTypes.filter((rt) => isEligible(rt, property));
-  }
-  if (pool.length === 0) {
-    const opp = allTypes.find((rt) => rt.key === "opportunist");
-    if (opp) pool = [opp];
-    else throw new Error("No eligible renter types");
+    throw new Error("All available tenant types have been contacted — wait for next month's refresh");
   }
   const choice = pool[Math.floor(Math.random() * pool.length)];
   const baseRent = estimatedMonthlyRent(property);
 
-  // Deduct cash + log + insert applicant + mark ad posted
   await supabase.from("profiles").update({ cash: cash - AD_COST }).eq("id", userId);
   await supabase.from("ledger").insert({
     player_id: userId,
@@ -321,10 +306,6 @@ export async function postTenantAd(opts: {
     renter_type_key: choice.key,
     offered_rent: Math.round(baseRent * Number(choice.rent_modifier)),
   });
-  await supabase
-    .from("player_properties")
-    .update({ last_ad_posted_at: new Date().toISOString().slice(0, 10) } as any)
-    .eq("id", playerPropertyId);
 }
 
 // ---------- Renew lease ----------
