@@ -32,7 +32,7 @@ const STATUS_COLORS = {
 
 type PinStatus = "rented" | "vacant" | "unaffordable" | "available";
 
-function pinSvg(tierColor: string, status: PinStatus) {
+function pinSvg(tierColor: string, status: PinStatus, isNew: boolean) {
   // Ring + badge convey status; body color always = tier color so tier stays visible.
   const ringColor =
     status === "rented" ? STATUS_COLORS.rented
@@ -53,6 +53,7 @@ function pinSvg(tierColor: string, status: PinStatus) {
 
   return `
     <div class="pe-pin" style="--pin-color:${tierColor};">
+      ${isNew ? '<div class="pe-pin-new-pulse"></div>' : ""}
       <div class="pe-pin-glow" style="background:${tierColor}"></div>
       <div class="pe-pin-body" style="background:linear-gradient(155deg, ${tierColor} 0%, color-mix(in oklab, ${tierColor} 70%, black) 100%);border-color:${ringColor};border-width:${ringWidth}px;opacity:${bodyOpacity};">
         <div class="pe-pin-dot"></div>
@@ -61,10 +62,10 @@ function pinSvg(tierColor: string, status: PinStatus) {
     </div>`;
 }
 
-function makePin(tierColor: string, status: PinStatus) {
+function makePin(tierColor: string, status: PinStatus, isNew: boolean) {
   return L.divIcon({
     className: "pe-pin-wrap",
-    html: pinSvg(tierColor, status),
+    html: pinSvg(tierColor, status, isNew),
     iconSize: [34, 42],
     iconAnchor: [17, 40],
   });
@@ -124,10 +125,10 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
   // Pre-build icon cache so identical pins reuse divIcons
   const iconFor = useMemo(() => {
     const cache = new Map<string, L.DivIcon>();
-    return (tierColor: string, status: PinStatus) => {
-      const k = `${tierColor}|${status}`;
+    return (tierColor: string, status: PinStatus, isNew: boolean) => {
+      const k = `${tierColor}|${status}|${isNew ? "new" : ""}`;
       let icon = cache.get(k);
-      if (!icon) { icon = makePin(tierColor, status); cache.set(k, icon); }
+      if (!icon) { icon = makePin(tierColor, status, isNew); cache.set(k, icon); }
       return icon;
     };
   }, []);
@@ -150,7 +151,9 @@ export function MapView({ properties, ownedMap, onSelect, cash, cities }: {
       : owned === "vacant" ? "vacant"
       : !affordable ? "unaffordable"
       : "available";
-    const icon = iconFor(tierColor, status);
+    const isNew = !owned && !!(p as any).listed_at &&
+      (Date.now() - new Date((p as any).listed_at).getTime() < 86_400_000);
+    const icon = iconFor(tierColor, status, isNew);
     const tooltipLabel = owned
       ? (owned === "rented" ? "Rented · yours" : "Vacant · yours")
       : (affordable ? `${tier.label} · affordable` : `${tier.label} · out of reach`);
