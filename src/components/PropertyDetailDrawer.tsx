@@ -3,7 +3,7 @@ import { Z } from "@/lib/z";
 import { Button } from "@/components/ui/button";
 import { PropertyImage } from "@/components/PropertyImage";
 import { formatZAR } from "@/lib/format";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from "recharts";
 import { X } from "lucide-react";
 import type { PlayerProperty } from "@/lib/game";
 
@@ -21,10 +21,20 @@ export function PropertyDetailDrawer({
   const orig = Number(property.purchase_price);
   const pl = cur - orig;
   const plPct = orig > 0 ? (pl / orig) * 100 : 0;
-  const data = (history ?? []).slice(-30).map((h) => ({
-    date: h.date.slice(5),
-    value: h.value,
-  }));
+  const raw = (history ?? []).slice(-30).map((h) => ({ date: h.date.slice(5), value: h.value }));
+  // Pad left with purchase price so we always show >=7 points starting from purchase
+  const MIN_POINTS = 7;
+  const padCount = Math.max(0, MIN_POINTS - raw.length);
+  const purchaseDate = (property as any).purchased_at
+    ? new Date((property as any).purchased_at).toISOString().slice(5, 10)
+    : "Buy";
+  const padding = padCount > 0
+    ? Array.from({ length: padCount }).map((_, i) => ({
+        date: i === 0 ? purchaseDate : "",
+        value: orig,
+      }))
+    : [];
+  const data = [...padding, ...raw];
 
   return (
     <Overlay onClose={onClose}>
@@ -73,32 +83,35 @@ export function PropertyDetailDrawer({
             </div>
 
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                Value — last 30 days
+              <div className="flex items-baseline justify-between mb-1">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Value history
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  Dashed line = purchase price
+                </div>
               </div>
-              <div className="h-44 rounded-xl border border-border bg-background/40 p-2">
-                {data.length >= 2 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={data}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis
-                        tick={{ fontSize: 10 }}
-                        stroke="hsl(var(--muted-foreground))"
-                        tickFormatter={(v) => formatZAR(Number(v), { compact: true })}
-                      />
-                      <Tooltip
-                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
-                        formatter={(v) => formatZAR(Number(v))}
-                      />
-                      <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full grid place-items-center text-xs text-muted-foreground italic">
-                    Not enough history yet — check back tomorrow.
-                  </div>
-                )}
+              <div className="h-[220px] sm:h-56 rounded-xl border border-border bg-background/40 p-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.32 0.04 260)" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="oklch(0.72 0.025 250)" interval="preserveStartEnd" />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      stroke="oklch(0.72 0.025 250)"
+                      width={50}
+                      tickFormatter={(v) => formatZAR(Number(v), { compact: true })}
+                      domain={["auto", "auto"]}
+                    />
+                    <Tooltip
+                      contentStyle={{ background: "oklch(0.22 0.045 260)", border: "1px solid oklch(0.32 0.04 260)", borderRadius: 8, fontSize: 14, padding: 10 }}
+                      labelStyle={{ fontSize: 13, fontWeight: 600, color: "oklch(0.85 0.02 250)" }}
+                      formatter={(v) => [formatZAR(Number(v)), "Value"]}
+                    />
+                    <ReferenceLine y={orig} stroke="oklch(0.82 0.14 85)" strokeDasharray="4 4" strokeWidth={1.5} />
+                    <Line type="monotone" dataKey="value" stroke="oklch(0.82 0.14 85)" strokeWidth={2.5} dot={{ r: 2.5 }} activeDot={{ r: 5 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
