@@ -494,6 +494,8 @@ export type Database = {
           evicting_until: string | null
           id: string
           last_ad_posted_at: string | null
+          last_eviction_at: string | null
+          last_eviction_reason: string | null
           monthly_maintenance: number
           monthly_rent: number
           nickname: string | null
@@ -511,6 +513,8 @@ export type Database = {
           evicting_until?: string | null
           id?: string
           last_ad_posted_at?: string | null
+          last_eviction_at?: string | null
+          last_eviction_reason?: string | null
           monthly_maintenance: number
           monthly_rent: number
           nickname?: string | null
@@ -528,6 +532,8 @@ export type Database = {
           evicting_until?: string | null
           id?: string
           last_ad_posted_at?: string | null
+          last_eviction_at?: string | null
+          last_eviction_reason?: string | null
           monthly_maintenance?: number
           monthly_rent?: number
           nickname?: string | null
