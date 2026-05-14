@@ -369,9 +369,11 @@ export async function processDailyTicks(userId: string) {
           ppUpdates.status = "vacant";
           ppUpdates.evicting_until = null;
           ppUpdates.vacancy_started_at = d;
+          ppUpdates.last_eviction_reason = "Evicted: 2+ consecutive missed rent payments";
+          ppUpdates.last_eviction_at = new Date().toISOString();
           await (supabase as any).from("tenants").delete().eq("player_property_id", pp.id);
           tenantByPP.delete(pp.id);
-          ledgerRows.push({ player_id: userId, type: "eviction", amount: 0, property_id: propertyId, description: "Eviction completed — property vacant" });
+          ledgerRows.push({ player_id: userId, type: "eviction", amount: 0, property_id: propertyId, description: "Eviction completed (2+ missed rent payments) — property vacant" });
           await generateApplicants({ userId, playerPropertyId: pp.id, property: (pp as any).properties as any });
         }
       } else if (pp.status === "rented" && tenant) {
@@ -398,7 +400,7 @@ export async function processDailyTicks(userId: string) {
             ppUpdates.status = "evicting";
             ppUpdates.evicting_until = ev.toISOString().slice(0, 10);
             await (supabase as any).from("tenants").update({ status: "evicting" }).eq("id", tenant.id);
-            ledgerRows.push({ player_id: userId, type: "eviction_notice", amount: 0, property_id: propertyId, description: `Eviction notice issued — ${rt.display_name}` });
+            ledgerRows.push({ player_id: userId, type: "eviction_notice", amount: 0, property_id: propertyId, description: `Eviction notice issued — ${rt.display_name} (${tenant.consecutive_missed_payments} missed payments)` });
           }
         }
 
@@ -431,11 +433,16 @@ export async function processDailyTicks(userId: string) {
 
         // ----- Tenant leaves on happiness 0 or status 'leaving' -----
         if (tenant.happiness <= 0 || tenant.status === "leaving") {
+          const leaveReason = tenant.happiness <= 0
+            ? `Tenant happiness reached 0 — ${rt.display_name} moved out`
+            : `Tenant gave notice — ${rt.display_name} moved out`;
           await (supabase as any).from("tenants").delete().eq("id", tenant.id);
           tenantByPP.delete(pp.id);
           ppUpdates.status = "vacant";
           ppUpdates.vacancy_started_at = d;
-          ledgerRows.push({ player_id: userId, type: "tenant_left", amount: 0, property_id: propertyId, description: `Tenant moved out — ${rt.display_name}` });
+          ppUpdates.last_eviction_reason = leaveReason;
+          ppUpdates.last_eviction_at = new Date().toISOString();
+          ledgerRows.push({ player_id: userId, type: "tenant_left", amount: 0, property_id: propertyId, description: leaveReason });
           await generateApplicants({ userId, playerPropertyId: pp.id, property: (pp as any).properties as any });
         } else {
           await (supabase as any)
@@ -687,7 +694,11 @@ export async function processDailyTicks(userId: string) {
           const victim = rented[Math.floor(Math.random() * rented.length)];
           await (supabase as any).from("tenants").delete().eq("player_property_id", victim.id);
           tenantByPP.delete(victim.id);
-          await supabase.from("player_properties").update({ status: "vacant" }).eq("id", victim.id);
+          await supabase.from("player_properties").update({
+            status: "vacant",
+            last_eviction_reason: "Cash crunch — tenant left abruptly (Red Zone Day 1)",
+            last_eviction_at: new Date().toISOString(),
+          } as any).eq("id", victim.id);
           victim.status = "vacant";
           ledgerRows.push({ player_id: userId, type: "vacancy_shock", amount: 0, property_id: victim.property_id, description: "Vacancy shock — tenant left abruptly (Red Zone Day 1)" });
           await generateApplicants({ userId, playerPropertyId: victim.id, property: (victim as any).properties as any });
