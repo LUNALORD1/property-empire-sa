@@ -91,12 +91,15 @@ export function AcquisitionCelebration({
           style={{ zIndex: Z.modal }}
           onClick={(e) => e.stopPropagation()}
         >
-          {isHero && (
-            <div className={"flex items-center justify-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] " + heroAccent!.chip}>
-              <heroAccent!.Icon className="w-4 h-4" />
-              {heroAccent!.label}
-            </div>
-          )}
+          {isHero && (() => {
+            const HeroIcon = heroAccent!.Icon;
+            return (
+              <div className={"flex items-center justify-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] " + heroAccent!.chip}>
+                <HeroIcon className="w-4 h-4" />
+                {heroAccent!.label}
+              </div>
+            );
+          })()}
           <div className="relative aspect-[16/10] overflow-hidden">
             <div className="absolute inset-0 animate-celebration-zoom origin-center">
               <PropertyImage
