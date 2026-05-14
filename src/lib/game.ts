@@ -393,7 +393,7 @@ export async function processDailyTicks(userId: string) {
           tenant.happiness = Math.max(0, Number(tenant.happiness) - 5);
           ledgerRows.push({ player_id: userId, type: "late_payment", amount: 0, property_id: propertyId, description: `Late payment — ${rt.display_name}` });
 
-          if (tenant.consecutive_missed_payments >= 2) {
+          if (Number(tenant.consecutive_missed_payments ?? 0) >= 2) {
             // Start eviction (2 months)
             const ev = new Date(d + "T00:00:00");
             ev.setDate(ev.getDate() + 2);
@@ -432,7 +432,7 @@ export async function processDailyTicks(userId: string) {
         }
 
         // ----- Tenant leaves on happiness 0 or status 'leaving' -----
-        if (tenant.happiness <= 0 || tenant.status === "leaving") {
+        if (Number(tenant.happiness ?? 80) <= 0 && tenant.status !== "evicting") {
           const leaveReason = tenant.happiness <= 0
             ? `Tenant happiness reached 0 — ${rt.display_name} moved out`
             : `Tenant gave notice — ${rt.display_name} moved out`;
