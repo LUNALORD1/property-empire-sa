@@ -52,22 +52,14 @@ export function TenantApplicantsSheet({
   const { data: ppMeta, refetch: refetchMeta } = useQuery({
     queryKey: ["pp_ad_meta", playerPropertyId, userId],
     queryFn: async () => {
-      const [{ data: pp }, { data: prof }] = await Promise.all([
-        supabase.from("player_properties").select("last_ad_posted_at").eq("id", playerPropertyId).single(),
-        supabase.from("profiles").select("cash").eq("id", userId).single(),
-      ]);
-      return { last: (pp as any)?.last_ad_posted_at as string | null, cash: Number(prof?.cash ?? 0) };
+      const { data: prof } = await supabase.from("profiles").select("cash").eq("id", userId).single();
+      return { cash: Number(prof?.cash ?? 0) };
     },
   });
 
-  const adPostedRecently = (() => {
-    const last = ppMeta?.last;
-    if (!last) return false;
-    const diff = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
-    return diff < 30;
-  })();
   const canAfford = (ppMeta?.cash ?? 0) >= AD_COST;
   const [postingAd, setPostingAd] = useState(false);
+  const [poolExhausted, setPoolExhausted] = useState(false);
 
   async function onPostAd() {
     if (postingAd) return;
@@ -78,7 +70,9 @@ export function TenantApplicantsSheet({
       await Promise.all([refetch(), refetchMeta()]);
       qc.invalidateQueries({ queryKey: ["profile", userId] });
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not post ad");
+      const msg = e?.message ?? "Could not post ad";
+      if (msg.includes("All available tenant types")) setPoolExhausted(true);
+      toast.error(msg);
     } finally {
       setPostingAd(false);
     }
