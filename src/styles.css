@@ -235,6 +235,28 @@
 .pe-pin:hover { transform: translateY(-3px) scale(1.08); }
 .pe-pin:hover .pe-pin-glow { opacity: 0.85; }
 
+/* New-listing pulse — gold ring around pins added in the last 24h */
+.pe-pin-new-pulse {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  margin-top: -13px;
+  border-radius: 50%;
+  border: 2px solid oklch(0.82 0.16 75);
+  box-shadow: 0 0 12px oklch(0.82 0.16 75 / 0.7);
+  animation: pe-pin-pulse 1.6s ease-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+@keyframes pe-pin-pulse {
+  0%   { transform: scale(0.85); opacity: 0.95; }
+  70%  { transform: scale(2.1);  opacity: 0;    }
+  100% { transform: scale(2.1);  opacity: 0;    }
+}
+
 /* Status badge in top-right of pin */
 .pe-pin-badge {
   position: absolute;

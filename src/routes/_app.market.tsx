@@ -35,7 +35,7 @@ function MarketPage() {
   const [tier, setTier] = useState<string>("all");
   const [selected, setSelected] = useState<Property | null>(null);
   const [busy, setBusy] = useState(false);
-  const [celebrate, setCelebrate] = useState<{ property: Property; ppId: string } | null>(null);
+  const [celebrate, setCelebrate] = useState<{ property: Property; ppId: string; variant: "standard" | "prestige" | "trophy" } | null>(null);
 
   const cityById = useMemo(() => Object.fromEntries((cities ?? []).map((c) => [c.id, c])), [cities]);
   const ownedMap = useMemo(() => {
@@ -77,7 +77,15 @@ function MarketPage() {
         ownedCount: owned?.length ?? 0,
       });
       if (res.playerPropertyId) {
-        setCelebrate({ property: selected, ppId: res.playerPropertyId });
+        const newTier = tierForPrice(Number(selected.listing_price)).id;
+        const ownedList = owned ?? [];
+        const hadTier5 = ownedList.some((o: any) => tierForPrice(Number(o.purchase_price)).id === 5);
+        const hadTier4 = ownedList.some((o: any) => tierForPrice(Number(o.purchase_price)).id === 4);
+        const variant: "standard" | "prestige" | "trophy" =
+          newTier === 5 && !hadTier5 ? "trophy"
+          : newTier === 4 && !hadTier4 ? "prestige"
+          : "standard";
+        setCelebrate({ property: selected, ppId: res.playerPropertyId, variant });
       } else {
         toast.success(`Bought ${selected.suburb}`);
       }
@@ -160,6 +168,7 @@ function MarketPage() {
           property={celebrate.property}
           playerPropertyId={celebrate.ppId}
           ownerName={profile?.display_name ?? "You"}
+          variant={celebrate.variant}
           onClose={() => {
             setCelebrate(null);
             qc.invalidateQueries({ queryKey: ["player_properties", user!.id] });

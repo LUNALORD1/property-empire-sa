@@ -4,7 +4,7 @@ import { MapView } from "@/components/MapView";
 import { PropertyCard, type BuyOptions } from "@/components/PropertyCard";
 import { useAssistants, useCities, useLoans, useMarketProperties, usePlayerProperties, useProfile, useTenants } from "@/lib/data-hooks";
 import { useAuth } from "@/hooks/use-auth";
-import { bedroomsToAdminPoints, totalAdminCap, type Property } from "@/lib/game";
+import { bedroomsToAdminPoints, totalAdminCap, tierForPrice, type Property } from "@/lib/game";
 import { buyProperty } from "@/lib/buy";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -32,7 +32,7 @@ function MapPage() {
   const { data: tenants } = useTenants(user?.id);
   const [selected, setSelected] = useState<Property | null>(null);
   const [busy, setBusy] = useState(false);
-  const [celebrate, setCelebrate] = useState<{ property: Property; ppId: string } | null>(null);
+  const [celebrate, setCelebrate] = useState<{ property: Property; ppId: string; variant: "standard" | "prestige" | "trophy" } | null>(null);
 
   const cityById = useMemo(() => Object.fromEntries((cities ?? []).map((c) => [c.id, c])), [cities]);
   const ownedMap = useMemo(() => {
@@ -73,7 +73,15 @@ function MapPage() {
         ownedCount: owned?.length ?? 0,
       });
       if (res.playerPropertyId) {
-        setCelebrate({ property: selected, ppId: res.playerPropertyId });
+        const newTier = tierForPrice(Number(selected.listing_price)).id;
+        const ownedList = owned ?? [];
+        const hadTier5 = ownedList.some((o: any) => tierForPrice(Number(o.purchase_price)).id === 5);
+        const hadTier4 = ownedList.some((o: any) => tierForPrice(Number(o.purchase_price)).id === 4);
+        const variant: "standard" | "prestige" | "trophy" =
+          newTier === 5 && !hadTier5 ? "trophy"
+          : newTier === 4 && !hadTier4 ? "prestige"
+          : "standard";
+        setCelebrate({ property: selected, ppId: res.playerPropertyId, variant });
       } else {
         toast.success(`You now own ${selected.suburb}!`);
       }
@@ -113,6 +121,7 @@ function MapPage() {
           property={celebrate.property}
           playerPropertyId={celebrate.ppId}
           ownerName={profile?.display_name ?? "You"}
+          variant={celebrate.variant}
           onClose={() => {
             setCelebrate(null);
             qc.invalidateQueries({ queryKey: ["player_properties", user.id] });

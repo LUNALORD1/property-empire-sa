@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PropertyImage } from "@/components/PropertyImage";
 import { setPropertyNickname } from "@/lib/tenants";
 import { Input } from "@/components/ui/input";
-import { Trophy } from "lucide-react";
+import { Trophy, Crown } from "lucide-react";
 import { toast } from "sonner";
 import type { Property } from "@/lib/game";
 
@@ -13,11 +13,17 @@ export function AcquisitionCelebration({
   property,
   playerPropertyId,
   ownerName,
+  variant = "standard",
   onClose,
 }: {
   property: Property;
   playerPropertyId: string;
   ownerName: string;
+  /**
+   * "trophy" / "prestige" render a distinct gold/violet hero card the first
+   * time a player acquires a Tier 5 / Tier 4 property. Otherwise "standard".
+   */
+  variant?: "standard" | "prestige" | "trophy";
   onClose: () => void;
 }) {
   const [nickname, setNickname] = useState("");
@@ -39,6 +45,14 @@ export function AcquisitionCelebration({
 
   // Confetti via 30 random gold/amber dots animating downward
   const confetti = Array.from({ length: 36 }).map((_, i) => i);
+
+  const isHero = variant !== "standard";
+  const heroAccent =
+    variant === "trophy"
+      ? { ring: "border-amber-300/70", glow: "shadow-[0_0_60px_rgba(243,200,105,0.55)]", chip: "bg-amber-300 text-amber-950", Icon: Trophy, label: "Trophy Acquired", sub: "A landmark property joins your empire" }
+      : variant === "prestige"
+      ? { ring: "border-violet-300/70", glow: "shadow-[0_0_60px_rgba(167,139,250,0.55)]", chip: "bg-violet-300 text-violet-950", Icon: Crown, label: "Prestige Property Added", sub: "An elite address bears your name" }
+      : null;
 
   return (
     <Overlay onClose={onClose}>
@@ -70,10 +84,22 @@ export function AcquisitionCelebration({
         </div>
 
         <div
-          className="relative w-full max-w-md bg-card border border-primary/40 rounded-3xl shadow-gold overflow-hidden"
+          className={
+            "relative w-full max-w-md bg-card rounded-3xl overflow-hidden border " +
+            (isHero ? `${heroAccent!.ring} ${heroAccent!.glow}` : "border-primary/40 shadow-gold")
+          }
           style={{ zIndex: Z.modal }}
           onClick={(e) => e.stopPropagation()}
         >
+          {isHero && (() => {
+            const HeroIcon = heroAccent!.Icon;
+            return (
+              <div className={"flex items-center justify-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] " + heroAccent!.chip}>
+                <HeroIcon className="w-4 h-4" />
+                {heroAccent!.label}
+              </div>
+            );
+          })()}
           <div className="relative aspect-[16/10] overflow-hidden">
             <div className="absolute inset-0 animate-celebration-zoom origin-center">
               <PropertyImage
@@ -101,6 +127,9 @@ export function AcquisitionCelebration({
               </div>
               <div className="text-lg font-bold leading-tight">{property.suburb}</div>
               <div className="text-xs opacity-80 truncate">{property.address}</div>
+              {isHero && (
+                <div className="text-[11px] mt-1 italic opacity-90">{heroAccent!.sub}</div>
+              )}
             </div>
           </div>
 
