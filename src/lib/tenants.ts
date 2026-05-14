@@ -363,8 +363,19 @@ export async function releaseTenant(tenantId: string) {
   await (supabase as any).from("tenants").delete().eq("id", tenantId);
   await supabase
     .from("player_properties")
-    .update({ status: "vacant", vacancy_started_at: new Date().toISOString().slice(0, 10) } as any)
+    .update({
+      status: "vacant",
+      vacancy_started_at: new Date().toISOString().slice(0, 10),
+      last_eviction_reason: "Released by you",
+      last_eviction_at: new Date().toISOString(),
+    } as any)
     .eq("id", t.player_property_id);
+  await supabase.from("ledger").insert({
+    player_id: t.player_id,
+    type: "tenant_released",
+    amount: 0,
+    description: "Tenant released by owner",
+  });
 
   const { data: pp } = await supabase
     .from("player_properties")
