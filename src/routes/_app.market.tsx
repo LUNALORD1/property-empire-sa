@@ -33,6 +33,7 @@ function MarketPage() {
   const { data: assistants } = useAssistants(user?.id);
   const [city, setCity] = useState<string>("all");
   const [tier, setTier] = useState<string>("all");
+  const [newOnly, setNewOnly] = useState<boolean>(false);
   const [selected, setSelected] = useState<Property | null>(null);
   const [busy, setBusy] = useState(false);
   const [celebrate, setCelebrate] = useState<{ property: Property; ppId: string; variant: "standard" | "prestige" | "trophy" } | null>(null);
@@ -55,13 +56,18 @@ function MarketPage() {
 
   const filtered = useMemo(() => {
     const t = tierFilters.find((x) => x.id === tier)!;
+    const nowMs = Date.now();
     return (properties ?? []).filter((p) => {
       if (city !== "all" && p.city_id !== city) return false;
       if (p.listing_price < t.min || p.listing_price >= t.max) return false;
+      if (newOnly) {
+        const listed = (p as any).listed_at;
+        if (!listed || nowMs - new Date(listed).getTime() >= 86_400_000) return false;
+      }
       return true;
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [properties, city, tier]);
+  }, [properties, city, tier, newOnly]);
 
   async function handleBuy(opts: BuyOptions) {
     if (!user || !selected) return;
@@ -110,6 +116,7 @@ function MarketPage() {
           ))}
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 mt-1 -mx-1 px-1">
+          <Chip active={newOnly} onClick={() => setNewOnly((v) => !v)}>✨ New today</Chip>
           {tierFilters.map((t) => (
             <Chip key={t.id} active={tier === t.id} onClick={() => setTier(t.id)}>{t.label}</Chip>
           ))}
