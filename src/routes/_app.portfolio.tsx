@@ -226,6 +226,12 @@ function PortfolioPage() {
                     <HappinessChip value={Number(tenant.happiness ?? 80)} />
                   </div>
                 )}
+                {!tenant && p.status === "vacant" && (p as any).last_eviction_reason && (
+                  <div className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-200">
+                    <DoorOpen className="w-3 h-3 shrink-0" />
+                    <span className="truncate">Last vacancy: {(p as any).last_eviction_reason}</span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-end pt-1 border-t border-border">
                   <div>
