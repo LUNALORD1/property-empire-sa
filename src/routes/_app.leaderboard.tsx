@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useLeaderboard } from "@/lib/data-hooks";
 import { formatZAR } from "@/lib/format";
@@ -60,9 +61,22 @@ function TabBtn({ active, onClick, icon, children }: { active: boolean; onClick:
 
 function RanksTab() {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const { data, isLoading } = useLeaderboard();
   const rows = data?.rows ?? [];
   const date = data?.date;
+
+  // Trigger a fresh leaderboard recompute when the Ranks tab mounts so
+  // net-worth values reflect the latest cash, portfolio, and loan balances.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/public/hooks/leaderboard-refresh", { method: "POST" })
+      .then(() => {
+        if (!cancelled) qc.invalidateQueries({ queryKey: ["leaderboard"] });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [qc]);
 
   return (
     <div className="p-4 max-w-3xl mx-auto w-full space-y-4">
